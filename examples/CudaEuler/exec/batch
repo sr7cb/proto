@@ -1,3 +1,0 @@
-#!/bin/bash
-module load pgi/18.4 openmpi/3.1.2/pgi/18.4
-mpirun -n 1 ./CudaEuler.exe
