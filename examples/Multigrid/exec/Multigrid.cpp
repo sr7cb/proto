@@ -221,7 +221,7 @@ multigridSolve(const SolveParams& a_params)
   double rhsabsmax = rhs.absMax();
   double rhsmax = rhs.max();
   double rhsmin = rhs.min();
-  cout << "rhs absmax = " << rhsabsmax << ", max = " << rhsmax << ", max = " << rhsmin<< endl;
+  cout << "rhs absmax = " << rhsabsmax << ", max = " << rhsmax << ", min = " << rhsmin<< endl;
   double resStart = std::max(std::abs(rhs.max()), std::abs(rhs.min()));
   resStart = std::max(resStart, a_params.tol);
   double resIter  = resStart;
