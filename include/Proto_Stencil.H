@@ -713,16 +713,6 @@ public:
                             BoxData<T,C,D,E>&  a_src,
                             BoxData<T,C,D,E>&  a_dst) const;
 
-#ifdef PROTO_CUDA
-
-    template<unsigned int C, unsigned char D, unsigned char E>   
-    void cudaApply( BoxData<T,C,D,E>&  a_src,
-                    BoxData<T,C,D,E>&  a_dst,
-                    Box&                a_box,
-                    bool               a_initToZero = false,
-                    T                  a_scale = 1) ;                      
-
-#endif
 private:
     /// Augment Stencil
     /**

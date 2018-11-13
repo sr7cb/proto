@@ -21,7 +21,7 @@ class Point
         /**
         Returns the zero Point <code>(0,0,...,0)</code>
         */
-        CUDA_DECORATION inline Point();
+         inline Point();
 
         /// C Array Constructor
         /**
@@ -36,7 +36,7 @@ class Point
 
             \param a_tuple  integer array representing a Point
         */
-        CUDA_DECORATION inline Point(const int (&a_tuple)[DIM]);
+         inline Point(const int (&a_tuple)[DIM]);
 
         /// Variadic Constructor
         /**
@@ -59,7 +59,7 @@ class Point
             \param args     at least DIM integer arguments representing a Point
         */
         template<typename... vals>
-        CUDA_DECORATION inline explicit Point(vals... args)
+         inline explicit Point(vals... args)
         {
             //PROTO_ASSERT(sizeof...(args)>=DIM,
             //"Point(vals... args) invalid. %lu arguments provided. At least %i are needed.",
@@ -67,7 +67,7 @@ class Point
             unpack(0, args...);
         }
         /// Copy Constructor
-        CUDA_DECORATION inline Point(const Point& a_pt);
+         inline Point(const Point& a_pt);
         
         ///@}
         //////////////////////////////////////////////////////////////////////////////////////////
@@ -107,7 +107,7 @@ class Point
 
             \param a_index  Index in [0,DIM)
         */
-        CUDA_DECORATION inline const int&  operator[](unsigned char a_index) const
+         inline const int&  operator[](unsigned char a_index) const
         {
           PROTO_ASSERT((a_index < DIM),
             "Point::operator[](uchar a_index) invalid for a_index = %i.\
@@ -122,7 +122,7 @@ class Point
 
             \param a_index  Index in [0,DIM)
         */
-        CUDA_DECORATION inline int&  operator[](unsigned char a_index)
+         inline int&  operator[](unsigned char a_index)
         {
           PROTO_ASSERT(((a_index < DIM)),
             "Point::operator[](uchar a_index) invalid for a_index = %i.\
@@ -143,7 +143,7 @@ class Point
 
             \param a_rhs    Another Point
         */
-        CUDA_DECORATION inline Point& operator=(const Point& a_rhs);
+         inline Point& operator=(const Point& a_rhs);
 
         /// Less-Than Operator
         /** 
@@ -161,7 +161,7 @@ class Point
 
             \param a_pt     Another Point
         */
-        CUDA_DECORATION inline bool operator==(const Point& a_pt) const;
+         inline bool operator==(const Point& a_pt) const;
 
         /// Inequality Operator
         /**
@@ -322,7 +322,7 @@ class Point
     private:
         
         template<typename... vars>
-        CUDA_DECORATION inline void unpack(int D, int i, vars... args)
+          inline void unpack(int D, int i, vars... args)
         {
             if (D < DIM)
             {

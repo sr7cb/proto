@@ -76,22 +76,8 @@ inline void WriteBoxData(const char*       a_filename,
   double* x[3] {nullptr,nullptr,nullptr};
   T* hostPtr[C*D*E];
   T* wholeHostPtr = nullptr;
-#ifdef PROTO_CUDA
-  int nsize = a_array.size();
-  wholeHostPtr = new T[nsize];
-  T* wholeDevPtr  = a_array.data();
-  //get memory to host
-  cudaMemcpy(wholeHostPtr, wholeDevPtr, nsize*sizeof(T), cudaMemcpyDeviceToHost);
-  cudaError err = cudaGetLastError();
-  if (err != cudaSuccess)
-  {
-    fprintf(stderr, "cudaGetLastError() failed at %s:%i : %s\n",
-            __FILE__, __LINE__, cudaGetErrorString(err));
-  }
-
-#else
   wholeHostPtr = a_array.data();
-#endif
+
   int ilin = 0;
   for(unsigned int ee = 0; ee < E; ++ee)
     for(unsigned int dd = 0; dd < D; ++dd)
@@ -139,9 +125,6 @@ inline void WriteBoxData(const char*       a_filename,
   StackAlloc::free(x[2]); // it's stack, have to do it backwards :-)
   StackAlloc::free(x[1]);
   StackAlloc::free(x[0]);
-#ifdef PROTO_CUDA
-  delete[] wholeHostPtr;
-#endif
 
 }
 

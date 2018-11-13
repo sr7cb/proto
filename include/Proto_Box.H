@@ -121,7 +121,7 @@ public:
         std::cout << B.size(1) << std::endl; //prints 4
         @endcode
     */
-    CUDA_DECORATION
+
     inline std::size_t size(unsigned char a_dim) const;
     
     /// Volumetric Size
@@ -137,7 +137,6 @@ public:
         std::cout << B.size() << std::endl; //prints 8 (=2*4)
         @endcode
     */
-    CUDA_DECORATION
     inline std::size_t size() const 
     {
         if (m_size <= 0){return 0;}
@@ -206,7 +205,6 @@ public:
         
         \param a_pt     a Point inside *this
     */
-    CUDA_DECORATION
     inline unsigned int index(const Point& a_pt) const;
     
     /// Access Point by Index
@@ -216,7 +214,6 @@ public:
         
         \param a_index  an index in <code>[0,this->size())</code>
     */
-    CUDA_DECORATION
     inline Point operator[](unsigned int a_index) const;
     ///@}
 

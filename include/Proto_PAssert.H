@@ -5,11 +5,7 @@
 #include <cstdlib>
 
 // Custom Assert macro with printf-style reporting
-#ifdef __CUDA_ARCH__
-
-#define PROTO_ASSERT(stmt,args...)
-
-#elif NDEBUG
+#ifdef NDEBUG
 
 #define PROTO_ASSERT(stmt,args...)
 

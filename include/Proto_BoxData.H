@@ -1,16 +1,5 @@
 #ifndef _PROTO_RECTMDARRAY_H_
 #define _PROTO_RECTMDARRAY_H_
-#ifdef PROTO_CUDA
-#include <thrust/transform_reduce.h>
-#include <thrust/transform.h>
-#include <thrust/for_each.h>
-#include <thrust/functional.h>
-#include <thrust/device_vector.h>
-#include <thrust/generate.h>
-#include <thrust/reduce.h>
-#include <thrust/functional.h>
-#include <thrust/execution_policy.h>
-#endif
 
 #include "Proto_Box.H"
 #include "Proto_PowerItoI.H"
@@ -264,16 +253,9 @@ public:
     /**
         Access component (c,d,e) of the const BoxData<T,C,D,E> associated with *this.
     */
-    CUDA_DECORATION
     inline T& operator()(unsigned int a_c, unsigned char a_d = 0, unsigned char a_e = 0)
     {
-        #ifdef __CUDA_ARCH__
-        int idx = threadIdx.x + blockIdx.x*blockDim.x;
-        T*  varloc =  (m_ptrs[a_c + C*a_d + C*D*a_e]);
-        return varloc[idx];
-        #else
-        return *(m_ptrs[a_c + C*a_d + C*D*a_e]);
-        #endif
+      return *(m_ptrs[a_c + C*a_d + C*D*a_e]);
     }
 
 
@@ -281,15 +263,9 @@ public:
     /**
         Access component (c,d,e) of the const BoxData<T,C,D,E> associated with *this.
     */
-    CUDA_DECORATION
     inline const T& operator()(unsigned int a_c, unsigned char a_d = 0, unsigned char a_e = 0) const 
     {
-        #ifdef __CUDA_ARCH__
-        int idx = threadIdx.x + blockIdx.x*blockDim.x;
-        return (m_ptrs[a_c + C*a_d + C*D*a_e])[idx];
-        #else
-        return *(m_ptrs[a_c + C*a_d + C*D*a_e]);
-        #endif
+      return *(m_ptrs[a_c + C*a_d + C*D*a_e]);
     }
    
 
@@ -561,7 +537,6 @@ private:
       \param a_d    Value of second tensor index
       \param a_e    Value of third tensor index
     */
-    CUDA_DECORATION
     inline T operator()(const Point& a_pt,
                         unsigned int  a_c = 0,
                         unsigned char a_d = 0,
@@ -671,7 +646,6 @@ private:
         \param a_d    Value of second tensor index
         \param a_e    Value of third tensor index
     */
-    CUDA_DECORATION
     inline unsigned int index(const Point a_pt,
                               unsigned int a_c = 0,
                               unsigned int a_d = 0,
@@ -1312,16 +1286,6 @@ template<typename T, unsigned int C=1, unsigned char D=1, unsigned char E=1,
   // End of BoxData Doxygen Module
   /*@}*/
 
-//========================================================================
-//CUDA STUFF
-//========================================================================
-#ifdef PROTO_CUDA
-  template<typename Func, typename... Srcs>
-  inline void cudaForall(const Func& a_F, Box a_box, Srcs&... a_srcs); 
-
-  template<typename Func, typename... Srcs>
-  inline void cudaForall_p(const Func& a_F, Box a_box, Srcs&... a_srcs); 
-#endif
 
 #include "Proto_BoxDataImplem.H"
 } //end Proto namespace

@@ -6,36 +6,11 @@
 // Constructors ||
 //==============++
 
-#ifdef PROTO_CUDA
-//========================================================================
-//  CUDA STUFF
-//========================================================================
-/** @defgroup Macros
-    Proto macros
-*/
-/** @addtogroup Macros */
-/*@{*/
-#define PROTO_KERNEL_START inline __device__
-#define PROTO_KERNEL_END(local_name, app_name)                  \
-  __device__ decltype(&local_name) app_name = local_name;
-#define PROTO_LAMBDA __device__
-#else
-
-#ifdef PROTO_OMP_FINE
-
-#define PROTO_KERNEL_START #pragma omp declare simd notinbranch
-#define PROTO_KERNEL_END(local_name, app_name)
-
-#else
 
 #define PROTO_KERNEL_START inline
 #define PROTO_KERNEL_END(local_name, app_name) constexpr decltype(&local_name) app_name = local_name;
-//#define PROTO_KERNEL_END(local_name, app_name) using app_name = local_name;
 #define PROTO_LAMBDA 
-/*@}*/
 
-#endif //end if PROTO_OMP_FINE
-#endif //end if PROTO_CUDA
 
 // Default Constructor
 template <class T, unsigned int C, unsigned char D, unsigned char E> 
@@ -89,14 +64,10 @@ void BoxData<T,C,D,E>::define(const Box& a_box)
   //PR_TIMERS("BoxData::define(Box) (memory allocation)");
   m_box=a_box;
 
-#ifdef PROTO_CUDA
-  cudaMalloc(&m_rawPtr, size()*sizeof(T));
-  m_data = ::std::shared_ptr<T>(m_rawPtr, [](T* p){cudaFree(p);});
-#else
   std::size_t count = this->size();
   m_data=::std::shared_ptr<T>(new T [count], [](T* p) { delete[] p;});
   m_rawPtr = m_data.get();
-#endif
+
 }
 
 // Destructor
@@ -260,18 +231,11 @@ void BoxData<T,C,D,E>::copyTo(BoxData<T,Cdest,Ddest,Edest>& a_dest,
   {
     unsigned int nsize = size();
 
-#ifdef PROTO_CUDA
-    T* castSrc = (T*) m_rawPtr;
-    thrust::device_ptr<T> devptrSrc = thrust::device_pointer_cast(castSrc);
-    T* dstPtr = (T*)(a_dest.data());
-    thrust::device_ptr<T> devptrDst = thrust::device_pointer_cast(dstPtr);
-    thrust::copy(thrust::device, devptrSrc, devptrSrc+nsize, devptrDst);
-#else
     for (int ii = 0; ii < size(); ii++)
     {
       (*a_dest[ii]) = m_rawPtr[ii];
     }
-#endif    
+
     return;
   }
   Box cross = a_srcBox.flatten(0);
@@ -294,17 +258,10 @@ void BoxData<T,C,D,E>::copyTo(BoxData<T,Cdest,Ddest,Edest>& a_dest,
                               a_destComps.low(0) + cc,
                               a_destComps.low(1) + dd,
                               a_destComps.low(2) + ee);
-#ifdef PROTO_CUDA
-          T* castSrc = (T*) srcVal;
-          thrust::device_ptr<T> devptrSrc = thrust::device_pointer_cast(castSrc);
-          thrust::device_ptr<T> devptrDst = thrust::device_pointer_cast(destVal);
-          thrust::copy(thrust::device, devptrSrc, devptrSrc+pencilLength, devptrDst);
-#else
           for (int ii = 0; ii < pencilLength; ii++)
           {
             destVal[ii] = srcVal[ii];
           }
-#endif
         }
       }
     }
@@ -385,45 +342,6 @@ Var<T,C,D,E> BoxData<T,C,D,E>::var(const Point& a_pt) const
 template <class T, unsigned int C, unsigned char D, unsigned char E> 
 BoxData<T,C,D,E>& BoxData<T,C,D,E>::operator+=(const BoxData<T,C,D,E>& a_rhs)
 {
-#ifdef PROTO_CUDA
-
-  if(m_box == a_rhs.m_box)
-  {
-    T* castPtrInp = (T*)(a_rhs.m_rawPtr);
-    thrust::device_ptr<T> devptrLoc = thrust::device_pointer_cast(m_rawPtr);
-    thrust::device_ptr<T> devptrInp = thrust::device_pointer_cast(castPtrInp);
-    unsigned int nsize = size();
-
-    thrust::transform(devptrLoc, devptrLoc+nsize, devptrInp, devptrLoc, thrust::plus<T>());
-  }
-  else
-  {
-    Box domain = m_box & a_rhs.m_box;
-    if (domain.size() <= 0){return *this;}
-
-    Box cross = domain.flatten(0);
-    unsigned int npencil = domain.size(0);
-
-    T* thisVal;
-    const T* rhsVal;
-    for(unsigned char e=0; e<E; e++)
-      for(unsigned char d=0; d<D; d++)
-        for(unsigned int c=0; c<C; c++)
-        {
-          for (auto iter = cross.begin(); iter != cross.end(); ++iter)
-          {
-            thisVal = this->data(*iter,c,d,e);
-            rhsVal = a_rhs.data(*iter,c,d,e);
-            T* castPtrInp = (T*)(rhsVal);
-            thrust::device_ptr<T> devptrLoc = thrust::device_pointer_cast(thisVal);
-            thrust::device_ptr<T> devptrInp = thrust::device_pointer_cast(castPtrInp);
-            unsigned int nsize = npencil;
-              
-            thrust::transform(devptrLoc, devptrLoc+nsize, devptrInp, devptrLoc, thrust::plus<T>());
-          }
-        }
-  }
-#else
   if(m_box == a_rhs.m_box)
   {
     const unsigned int n = this->size();
@@ -460,7 +378,7 @@ BoxData<T,C,D,E>& BoxData<T,C,D,E>::operator+=(const BoxData<T,C,D,E>& a_rhs)
           }
         }
   }
-#endif    
+
   return *this;
 }
 
@@ -468,45 +386,6 @@ BoxData<T,C,D,E>& BoxData<T,C,D,E>::operator+=(const BoxData<T,C,D,E>& a_rhs)
 template <class T, unsigned int C, unsigned char D, unsigned char E> 
 BoxData<T,C,D,E>& BoxData<T,C,D,E>::operator-=(const BoxData<T,C,D,E>& a_rhs)
 {
-#ifdef PROTO_CUDA
-  if(m_box == a_rhs.m_box)
-  {
-    T* castPtrInp = (T*)(a_rhs.m_rawPtr);
-    thrust::device_ptr<T> devptrLoc = thrust::device_pointer_cast(m_rawPtr);
-    thrust::device_ptr<T> devptrInp = thrust::device_pointer_cast(castPtrInp);
-    unsigned int nsize = size();
-
-    thrust::transform(devptrLoc, devptrLoc+nsize, devptrInp, devptrLoc, thrust::minus<T>());
-  }
-  else
-  {
-    Box domain = m_box & a_rhs.m_box;
-    if (domain.size() <= 0){return *this;}
-
-    Box cross = domain.flatten(0);
-    unsigned int npencil = domain.size(0);
-
-    T* thisVal;
-    const T* rhsVal;
-    for(unsigned char e=0; e<E; e++)
-      for(unsigned char d=0; d<D; d++)
-        for(unsigned int c=0; c<C; c++)
-        {
-          for (auto iter = cross.begin(); iter != cross.end(); ++iter)
-          {
-            thisVal = this->data(*iter,c,d,e);
-            rhsVal =  a_rhs.data(*iter,c,d,e);
-            T* castPtrInp = (T*)(rhsVal);
-            thrust::device_ptr<T> devptrLoc = thrust::device_pointer_cast(thisVal);
-            thrust::device_ptr<T> devptrInp = thrust::device_pointer_cast(castPtrInp);
-            unsigned int nsize = npencil;
-
-            thrust::transform(devptrLoc, devptrLoc+nsize, devptrInp, devptrLoc, thrust::minus<T>());
-
-          }
-        }
-  }
-#else
   //PR_TIMERS("BoxData::operator-=(BoxData&)");
     
   if(m_box == a_rhs.m_box)
@@ -545,7 +424,7 @@ BoxData<T,C,D,E>& BoxData<T,C,D,E>::operator-=(const BoxData<T,C,D,E>& a_rhs)
           }
         }
   }
-#endif
+
   return *this;
 }
 
@@ -554,45 +433,6 @@ template <class T, unsigned int C, unsigned char D, unsigned char E>
 BoxData<T,C,D,E>& BoxData<T,C,D,E>::operator*=(const BoxData<T,C,D,E>& a_rhs)
 {
     
-#ifdef PROTO_CUDA
-  if(m_box == a_rhs.m_box)
-  {
-    T* castPtrInp = (T*)(a_rhs.m_rawPtr);
-    thrust::device_ptr<T> devptrLoc = thrust::device_pointer_cast(m_rawPtr);
-    thrust::device_ptr<T> devptrInp = thrust::device_pointer_cast(castPtrInp);
-    unsigned int nsize = size();
-
-    thrust::transform(devptrLoc, devptrLoc+nsize, devptrInp, devptrLoc, thrust::multiplies<T>());
-  }
-  else
-  {
-    Box domain = m_box & a_rhs.m_box;
-    if (domain.size() <= 0){return *this;}
-
-    Box cross = domain.flatten(0);
-    unsigned int npencil = domain.size(0);
-
-    T* thisVal;
-    const T* rhsVal;
-    for(unsigned char e=0; e<E; e++)
-      for(unsigned char d=0; d<D; d++)
-        for(unsigned int c=0; c<C; c++)
-        {
-          for (auto iter = cross.begin(); iter != cross.end(); ++iter)
-          {
-            thisVal = this->data(*iter,c,d,e);
-            rhsVal =  a_rhs.data(*iter,c,d,e);
-            T* castPtrInp = (T*)(rhsVal);
-            thrust::device_ptr<T> devptrLoc = thrust::device_pointer_cast(thisVal);
-            thrust::device_ptr<T> devptrInp = thrust::device_pointer_cast(castPtrInp);
-            unsigned int nsize = npencil;
-
-            thrust::transform(devptrLoc, devptrLoc+nsize, devptrInp, devptrLoc, thrust::multiplies<T>());
-
-          }
-        }
-  }
-#else
   if(m_box == a_rhs.m_box)
   {
     const unsigned int n = this->size();
@@ -629,7 +469,7 @@ BoxData<T,C,D,E>& BoxData<T,C,D,E>::operator*=(const BoxData<T,C,D,E>& a_rhs)
           }
         }
   }
-#endif
+
   return *this;
 }
 
@@ -638,45 +478,6 @@ template <class T, unsigned int C, unsigned char D, unsigned char E>
 BoxData<T,C,D,E>& BoxData<T,C,D,E>::operator/=(const BoxData<T,C,D,E>& a_rhs)
 {
     
-#ifdef PROTO_CUDA
-  if(m_box == a_rhs.m_box)
-  {
-    T* castPtrInp = (T*)(a_rhs.m_rawPtr);
-    thrust::device_ptr<T> devptrLoc = thrust::device_pointer_cast(m_rawPtr);
-    thrust::device_ptr<T> devptrInp = thrust::device_pointer_cast(castPtrInp);
-    unsigned int nsize = size();
-
-    thrust::transform(devptrLoc, devptrLoc+nsize, devptrInp, devptrLoc, thrust::divides<T>());
-  }
-  else
-  {
-    Box domain = m_box & a_rhs.m_box;
-    if (domain.size() <= 0){return *this;}
-
-    Box cross = domain.flatten(0);
-    unsigned int npencil = domain.size(0);
-
-    T* thisVal;
-    const T* rhsVal;
-    for(unsigned char e=0; e<E; e++)
-      for(unsigned char d=0; d<D; d++)
-        for(unsigned int c=0; c<C; c++)
-        {
-          for (auto iter = cross.begin(); iter != cross.end(); ++iter)
-          {
-            thisVal = this->data(*iter,c,d,e);
-            rhsVal =  a_rhs.data(*iter,c,d,e);
-
-            T* castPtrInp = (T*)(rhsVal);
-            thrust::device_ptr<T> devptrLoc = thrust::device_pointer_cast(thisVal);
-            thrust::device_ptr<T> devptrInp = thrust::device_pointer_cast(castPtrInp);
-            unsigned int nsize = npencil;
-
-            thrust::transform(devptrLoc, devptrLoc+nsize, devptrInp, devptrLoc, thrust::divides<T>());
-          }
-        }
-  }
-#else
   if(m_box == a_rhs.m_box)
   {
     const unsigned int n = this->size();
@@ -718,7 +519,7 @@ BoxData<T,C,D,E>& BoxData<T,C,D,E>::operator/=(const BoxData<T,C,D,E>& a_rhs)
           }
         }
   }
-#endif
+
   return *this;
 }
 
@@ -727,55 +528,33 @@ template <class T, unsigned int C, unsigned char D, unsigned char E>
 BoxData<T,C,D,E>& BoxData<T,C,D,E>::operator+=(T a_scale)
 {
 
-#ifdef PROTO_CUDA
-
-  BoxData<T,C,D,E> val(m_box);
-  val.setVal(a_scale);
-  (*this) += val;
-
-#else  
   for (int ii = 0; ii < this->size(); ii++)
   {
     m_rawPtr[ii] += a_scale;
   }
-#endif
+
   return *this;
 }
 
 template <class T, unsigned int C, unsigned char D, unsigned char E> 
 BoxData<T,C,D,E>& BoxData<T,C,D,E>::operator-=(T a_scale)
 {
-#ifdef PROTO_CUDA
-  BoxData<T,C,D,E> val(m_box);
-  val.setVal(a_scale);
-  (*this) -= val;
-    
-#else
     for (int ii = 0; ii < this->size(); ii++)
   {
     m_rawPtr[ii] -= a_scale;
   }
-#endif
+
   return *this;
 }
 
 template <class T, unsigned int C, unsigned char D, unsigned char E> 
 BoxData<T,C,D,E>& BoxData<T,C,D,E>::operator*=(T a_scale)
 {
-  //PR_TIMERS("BoxData::operator*=(T)");
-#ifdef PROTO_CUDA
-
-  BoxData<T,C,D,E> val(m_box);
-  val.setVal(a_scale);
-  (*this) *= val;
-
-#else  
-    
   for (int ii = 0; ii < this->size(); ii++)
   {
     m_rawPtr[ii] *= a_scale;
   }
-#endif
+
   return *this;
 }
 
@@ -784,18 +563,11 @@ BoxData<T,C,D,E>& BoxData<T,C,D,E>::operator/=(T a_scale)
 {
   PROTO_ASSERT(a_scale != 0,
                "BoxData::operator/=(T a_scale) invalid for a_scale = 0. Division by 0");
-#ifdef PROTO_CUDA
-
-  BoxData<T,C,D,E> val(m_box);
-  val.setVal(a_scale);
-  (*this) /= val;
-
-#else  
   for (int ii = 0; ii < this->size(); ii++)
   {
     m_rawPtr[ii] /= a_scale;
   }
-#endif
+
   return *this;
 }
 
@@ -808,13 +580,6 @@ BoxData<T,C,D,E>& BoxData<T,C,D,E>::operator/=(T a_scale)
 template <class T, class B>
 inline void setBoxDataVal(BoxData<T>& a_data, const B& a_box, T a_val)
 {
-#ifdef PROTO_CUDA
-
-  std::cout << "should not get here with cuda" << std::endl;
-  abort();
-  
-#else
-//  std::cout << "setBoxDataVal2" << std::endl;
   Box intersect = a_box & a_data.box();
   Box face = intersect.flatten(0);
   int npencil = intersect.size(0);
@@ -827,7 +592,7 @@ inline void setBoxDataVal(BoxData<T>& a_data, const B& a_box, T a_val)
       ptr[ii] = a_val;
     }
   }
-#endif
+
 }
 
 
@@ -835,22 +600,6 @@ template <class T, unsigned int C, unsigned char D, unsigned char E>
 void BoxData<T,C,D,E>::setVal(const T& a_val)
 {
 
-#ifdef PROTO_CUDA
-//  std::cout << "setValCuda" << std::endl;
-
- thrust::device_ptr<T> devptr = thrust::device_pointer_cast(m_rawPtr);
- unsigned int nsize = size();
-
- thrust::fill(thrust::device, devptr, devptr+nsize, a_val);
-
-  cudaError err = cudaGetLastError();
-  if (err != cudaSuccess)
-  {
-    fprintf(stderr, "cudaGetLastError() failed at %s:%i : %s\n",
-            __FILE__, __LINE__, cudaGetErrorString(err));
-  }
-#else
-//  std::cout << "setValNonCuda" << std::endl;
   int iset = 0;
   for (unsigned int ee = 0; ee < E; ee++)
   {
@@ -864,7 +613,7 @@ void BoxData<T,C,D,E>::setVal(const T& a_val)
       }
     }
   }
-#endif
+
 }
 
 // Set Values Within Box
@@ -911,16 +660,6 @@ void BoxData<T,C,D,E>::setVal(const T& a_val,
   auto slicebd = slice(*this, a_c, a_d, a_e);
   setBoxDataVal<T>(slicebd, a_box, a_val);
 }
-#ifdef PROTO_CUDA
-template<typename T>
-struct absolute_value 
-{
-  __host__ __device__ T operator()(const T &x) const
-  {
-    return x < T(0) ? -x : x;
-  }
-};
-#endif
 
 
 /// Maximum Absolute Value (Global)
@@ -933,42 +672,6 @@ T BoxData<T,C,D,E>::absMax() const
  T absmax = std::max(std::abs(minval), std::abs(maxval));
 
  return absmax;
-//#ifdef PROTO_CUDA
-//
-// size_t nsize = size();
-//
-//
-// thrust::device_ptr<T> devptr(m_rawPtr);
-// cudaError err = cudaGetLastError();
-// if (err != cudaSuccess)
-// {
-//   fprintf(stderr, "cudaGetLastError() failed at %s:%i : %s\n",
-//           __FILE__, __LINE__, cudaGetErrorString(err));
-// }
-//
-// T absmax1 = thrust::transform_reduce(devptr, devptr + nsize, 
-//                                   absolute_value<T>(),
-//                                   0,
-//                                   thrust::maximum<T>());
-// absmax = absmax1;
-// err = cudaGetLastError();
-// if (err != cudaSuccess)
-// {
-//   fprintf(stderr, "cudaGetLastError() failed at %s:%i : %s\n",
-//           __FILE__, __LINE__, cudaGetErrorString(err));
-// }
-//
-//#else
-//  for (int ii = 0; ii < size(); ii++)
-//  {
-//    T val = std::abs(m_rawPtr[ii]);
-//    if (val > absmax)
-//    {
-//      absmax = val;
-//    }
-//  }
-//#endif
-//  return absmax;
 }
 
 /// Maximum Absolute Value (Componentwise)
@@ -986,29 +689,6 @@ T BoxData<T,C,D,E>::min() const
 {
     
  T min = std::numeric_limits<T>::max();
-#ifdef PROTO_CUDA
-
- size_t nsize = size();
-
- thrust::device_ptr<T> devptr(m_rawPtr);
- cudaError err = cudaGetLastError();
- if (err != cudaSuccess)
- {
-   fprintf(stderr, "cudaGetLastError() failed at %s:%i : %s\n",
-           __FILE__, __LINE__, cudaGetErrorString(err));
- }
-
- T min1 = thrust::reduce(thrust::device, devptr, devptr + nsize, min, thrust::minimum<T>());
-
- min = min1;
- err = cudaGetLastError();
- if (err != cudaSuccess)
- {
-   fprintf(stderr, "cudaGetLastError() failed at %s:%i : %s\n",
-           __FILE__, __LINE__, cudaGetErrorString(err));
- }
-
-#else
 
   T m = std::numeric_limits<T>::max();
   for (int ii = 0; ii < this->size(); ii++)
@@ -1016,7 +696,7 @@ T BoxData<T,C,D,E>::min() const
     if (m_rawPtr[ii] < m){m = m_rawPtr[ii];}
   }
   min = m;
-#endif
+
   return min;
 }
 
@@ -1032,30 +712,7 @@ T BoxData<T,C,D,E>::min(int a_c, int a_d, int a_e) const
 template <class T, unsigned int C, unsigned char D, unsigned char E>
 T BoxData<T,C,D,E>::max() const
 {
- T max = -std::numeric_limits<T>::max();
-#ifdef PROTO_CUDA
-
- size_t nsize = size();
-
- thrust::device_ptr<T> devptr(m_rawPtr);
- cudaError err = cudaGetLastError();
- if (err != cudaSuccess)
- {
-   fprintf(stderr, "cudaGetLastError() failed at %s:%i : %s\n",
-           __FILE__, __LINE__, cudaGetErrorString(err));
- }
-
- T max1 = thrust::reduce(thrust::device, devptr, devptr + nsize, max, thrust::maximum<T>());
-
- max = max1;
- err = cudaGetLastError();
- if (err != cudaSuccess)
- {
-   fprintf(stderr, "cudaGetLastError() failed at %s:%i : %s\n",
-           __FILE__, __LINE__, cudaGetErrorString(err));
- }
-
-#else
+  T max = -std::numeric_limits<T>::max();
 
   T m = -(std::numeric_limits<T>::max());
   for (int ii = 0; ii < this->size(); ii++)
@@ -1063,7 +720,7 @@ T BoxData<T,C,D,E>::max() const
     if (m_rawPtr[ii] > m){m = m_rawPtr[ii];}
   }
   max =  m;
-#endif
+
   return max;
 }
 
@@ -1471,9 +1128,6 @@ void forall_parse_args(Box& a_domain, First& a_first, Rest&... a_rest)
 template<typename Func, typename... Srcs>
 void forallInPlaceBase(const Func& a_F, Box a_box, Srcs&... a_srcs)
 {
-#ifdef PROTO_CUDA
-  cudaForall(a_F, a_box, a_srcs...);
-#else
   Box cross = a_box.flatten(0);
   int npencil = a_box.size(0);
 
@@ -1481,18 +1135,13 @@ void forallInPlaceBase(const Func& a_F, Box a_box, Srcs&... a_srcs)
   {
     pencilFunc(a_F, npencil, (p_ref(a_srcs,*iter))...);
   }
-#endif
+
 }
 
 // Point input version
 template<typename Func, typename... Srcs>
 inline void forallInPlaceBase_p(const Func& a_F,  Box a_box, Srcs&... a_srcs)
 {
-#ifdef PROTO_CUDA
-
-  return cudaForall_p(a_F, a_box, a_srcs...) ;
-
-#else
   Box cross = a_box.flatten(0);
   int npencil = a_box.size(0);
 
@@ -1500,7 +1149,7 @@ inline void forallInPlaceBase_p(const Func& a_F,  Box a_box, Srcs&... a_srcs)
   {
     pencilFunc_p(a_F, npencil, *iter, p_ref(a_srcs,*iter)...);
   }
-#endif
+
 }
 
 //========================================================================
@@ -1597,141 +1246,5 @@ inline void forallInPlace_p(const Func& a_F,  Box a_box, Srcs&... a_srcs)
   forallInPlaceBase_p(a_F, a_box, a_srcs...);
 }
 
-#ifdef PROTO_CUDA
-
-//template<typename T, unsigned int C, unsigned char D, unsigned char E>
-//inline 
-//template<typename Func, typename... Vars>
-//__global__
-//void indexer_grid(int a_size[3], Func a_body, Vars... a_vars) 
-//{
-//    uint i = threadIdx.x + blockIdx.x*blockDim.x;
-//    uint j = threadIdx.y + blockIdx.y*blockDim.y;
-//    uint k = threadIdx.z + blockIdx.z*blockDim.z;
-//    if (i<a_size[0] && j<a_size[1] && k<a_size[2])
-//    {
-//        a_body(a_vars...);
-//    }
-//}
-
-template<typename Func, typename... Srcs>
-__global__
-void indexer(int a_begin, int a_end, Func a_body, Srcs... a_srcs) 
-{
-  int idx = threadIdx.x + blockIdx.x*blockDim.x;
-  if (idx >= a_begin && idx < a_end)
-  {
-    a_body(a_srcs...);
-  }
-}
-
-__device__ __host__
-inline Point compute_point(Point a_low, Point a_high, unsigned int a_index)
-{
-  int tuple[DIM];
-  for (int ii = 0; ii < DIM; ii++)
-  {
-    int factor = (a_high[ii] - a_low[ii] + 1);
-    int kred = a_index % factor;
-    tuple[ii] = kred + a_low[ii];
-    a_index = (a_index - kred)/factor;
-  }
-  return Point(tuple);
-}
-
-template<typename Func, typename... Srcs>
-__global__
-void indexer_p(int a_begin, int a_end, Point a_low, Point a_high,
-               Func a_body, Srcs... a_srcs) 
-{
-  int idx = threadIdx.x + blockIdx.x*blockDim.x;
-  if (idx >= a_begin && idx < a_end)
-  {
-    Point p = compute_point(a_low, a_high, blockIdx.x);
-    p[0] += threadIdx.x;
-    a_body(p,a_srcs...);
-  }
-}
-
-
-template<typename Func>
-inline Func mapper(const Func& device_f)
-{
-  Func rtn(device_f);
-
-  cudaError_t err = cudaMemcpyFromSymbol(&rtn, device_f, sizeof(Func), 0, cudaMemcpyDeviceToHost);
-  if (err != cudaSuccess)
-  {
-    printf("FAILED to get SYMBOL\n");
-    fprintf(stderr, "cudaMemcpyFromSymbol() failed at %s:%i : %s\n",
-            __FILE__, __LINE__, cudaGetErrorString(err));
-  }
-  return rtn;
-}
-
-template<typename Func, typename... Srcs>
-inline void makeVars(const Func& a_F, Box a_box, Srcs... a_srcs)
-{
-  int N = a_box.size();
-  int stride = a_box.size(0);
-  int blocks = a_box.flatten(0).size();
-  indexer<<<blocks, stride>>>(0, N, mapper(a_F), a_srcs...);
-  cudaError err = cudaGetLastError();
-  if (err != cudaSuccess)
-  {
-    fprintf(stderr, "cudaGetLastError() failed at %s:%i : %s\n",
-            __FILE__, __LINE__, cudaGetErrorString(err));
-  }
-}
-
-template<typename Func, typename... Srcs>
-inline void makeVars_p(const Func& a_F, Box a_box, Srcs... a_srcs)
-{
-  int N = a_box.size();
-  int stride = a_box.size(0);
-  Box cross = a_box.flatten(0);
-  int blocks = cross.size();
-  indexer_p<<<blocks, stride>>>(0, N, cross.low(), cross.high(),
-                                mapper(a_F), a_srcs...);
-  cudaError err = cudaGetLastError();
-  if (err != cudaSuccess)
-  {
-    fprintf(stderr, "cudaCheckError() failed at %s:%i : %s\n",
-            __FILE__, __LINE__, cudaGetErrorString(err));
-  }
-}
-
-
-
-template<typename T>
-inline T p_ref_cuda(const T& a_s, const Point& a_p) {return a_s;}
-
-template<typename T, unsigned int C, unsigned char D, unsigned char E>
-inline Var<T,C,D,E> p_ref_cuda(BoxData<T,C,D,E>& a_data, const Point& a_p)
-{
-  return a_data.var(a_p);
-}
-
-template<typename T, unsigned int C, unsigned char D, unsigned char E>
-inline Var<T,C,D,E> p_ref_cuda(const BoxData<T,C,D,E>& a_data, const Point& a_p)
-{
-  return a_data.var(a_p);
-}
-
-template<typename Func, typename... Srcs>
-inline void cudaForall(const Func& a_F, Box a_box, Srcs&... a_srcs)
-{
-  makeVars(a_F, a_box, p_ref_cuda(a_srcs, a_box.low())...);
-}
-
-template<typename Func, typename... Srcs>
-        
-inline void cudaForall_p(const Func& a_F, Box a_box, Srcs&... a_srcs) 
-{
-  makeVars_p(a_F, a_box, p_ref_cuda(a_srcs, a_box.low())...);
-}
-
-
-#endif
 
 #endif
