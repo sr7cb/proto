@@ -99,12 +99,11 @@ namespace Proto
   __device__ 
   inline Var<data_t, ncomp>
   cudaGetVar(unsigned int a_ivec,
-             EBIrregStruct<cent, data_t, ncomp>* a_dst)
+             thrust::device_ptr< EBIrregStruct<cent, data_t, ncomp> > a_dst)
   {
     Var<data_t, ncomp> retval;
 
-    const EBIrregStruct<cent, data_t, ncomp>*  rawptr = a_dst;
-    const EBIrregStruct<cent, data_t, ncomp>&  ugly   = rawptr[a_ivec];
+    const EBIrregStruct<cent, data_t, ncomp>&  ugly   = a_dst[a_ivec];
     for(int icomp = 0; icomp < ncomp; icomp++)
     {
       retval.m_ptrs[icomp] = ugly.m_startPtr + ugly.m_offset + (ugly.m_varsize*icomp);
@@ -120,7 +119,7 @@ namespace Proto
   __global__
   void
   vec_indexer(unsigned int a_begin, unsigned int a_end,Func a_body, 
-              EBIrregStruct<cent, data_t, ncomp>*  a_dst, Srcs... a_srcs)
+              thrust::device_ptr< EBIrregStruct<cent, data_t, ncomp> >  a_dst, Srcs... a_srcs)
   {
     int idx = threadIdx.x + blockIdx.x*blockDim.x;
     if (idx >= a_begin && idx < a_end)
@@ -134,28 +133,14 @@ namespace Proto
   __global__
   void
   vec_indexer_i(unsigned int a_begin, unsigned int a_end,Func a_body, 
-                EBIrregStruct<cent, data_t, ncomp>*  a_dst, Srcs... a_srcs)
+                thrust::device_ptr<EBIrregStruct<cent, data_t, ncomp> >&  a_dst, Srcs... a_srcs)
   {
     int idx = threadIdx.x + blockIdx.x*blockDim.x;
     if (idx >= a_begin && idx < a_end)
     {
-      a_body(a_dst[idx].m_index.m_tuple, cudaGetVar(idx, a_dst), cudaGetVar(idx, a_srcs)...);
+      EBIrregStruct<cent, data_t, ncomp> ugly   = a_dst[idx];
+      a_body(ugly.m_index.m_tuple, cudaGetVar(idx, a_dst), cudaGetVar(idx, a_srcs)...);
     }
-  }
-//going into this srcs are EBIrregStruct<cent, data_t, ncomp>* and other stuff
-  template <typename T>
-  inline int
-  cleanUpPtrMem(T a_T)
-  {
-    return 0;
-  }
-//going into this srcs are EBIrregStruct<cent, data_t, ncomp>* and other stuff
-  template <CENTERING cent, typename data_t,unsigned int ncomp>
-  inline int
-  cleanUpPtrMem(EBIrregStruct<cent, data_t, ncomp> * a_ptr)
-  {
-    cudaFree(a_ptr);
-    return 0;
   }
 
 //
@@ -165,11 +150,11 @@ namespace Proto
   {
   }
 
-//going into this srcs are EBIrregStruct<cent, data_t, ncomp>* and other stuff
+//going into this srcs are thrust::device_vector< EBIrregStruct<cent, data_t, ncomp> > and other stuff
   template<CENTERING cent, typename data_t,unsigned int ncomp,  typename Func, typename... Srcs>
   inline void
   cudaVectorFunc(const Func& a_F, unsigned int a_Nvec, 
-                 EBIrregStruct<cent, data_t, ncomp> * a_dst,Srcs... a_srcs)
+                 thrust::device_ptr< EBIrregStruct<cent, data_t, ncomp>  > a_dst,Srcs... a_srcs)
   {
     cudaStream_t curstream = DisjointBoxLayout::getCurrentStream();
     const int N = a_Nvec;
@@ -179,8 +164,6 @@ namespace Proto
     vec_indexer<<<blocks, stride, smem, curstream>>>
       (0, N, a_F, a_dst, a_srcs...);
 
-    //there is a cudaMalloc that happens above so we have to delete
-    emptyFunc(cleanUpPtrMem(a_dst ), (cleanUpPtrMem(a_srcs))...); 
   }
 
 
@@ -188,7 +171,7 @@ namespace Proto
   template<CENTERING cent, typename data_t,unsigned int ncomp,  typename Func, typename... Srcs>
   inline void
   cudaVectorFunc_i(const Func& a_F, unsigned int a_Nvec, 
-                   EBIrregStruct<cent, data_t, ncomp> * a_dst,Srcs... a_srcs)
+                   thrust::device_ptr<EBIrregStruct<cent, data_t, ncomp> > a_dst,Srcs... a_srcs)
   {
     cudaStream_t curstream = DisjointBoxLayout::getCurrentStream();
     const int N = a_Nvec;
@@ -198,8 +181,6 @@ namespace Proto
     vec_indexer_i<<<blocks, stride, smem, curstream>>>
       (0, N, a_F, a_dst, a_srcs...);
 
-    //there is a cudaMalloc that happens above so we have to delete
-    emptyFunc(cleanUpPtrMem(a_dst ), (cleanUpPtrMem(a_srcs))...); 
   }
 
 
@@ -212,19 +193,15 @@ namespace Proto
   }
 //
   template <CENTERING cent, typename  data_t, unsigned int ncomp>
-  inline  EBIrregStruct<cent, data_t, ncomp>*
+  inline  thrust::device_ptr< EBIrregStruct<cent, data_t, ncomp> >
   cudagetEBIrregStruct(const vector<EBIndex<cent> >& a_indices,
                        IrregData<cent, data_t, ncomp>& a_s )
   {
     vector< EBIrregStruct<cent, data_t, ncomp> > hostvec = getEBIrregStruct(a_indices, a_s);
-
-    size_t memsize = hostvec.size()*sizeof(EBIrregStruct<cent, data_t, ncomp>);
-    EBIrregStruct<cent, data_t, ncomp>* retval;
-    cudaMalloc(&retval, memsize);
-    cudaMemcpy(retval, hostvec.data(), memsize, cudaMemcpyHostToDevice);
-
     //this copies from the host to the device
-    return retval;
+    thrust::device_vector< EBIrregStruct<cent, data_t, ncomp> > retval = hostvec;
+
+    return retval.data();
   }
 //going into this srcs are IrregDatas and other stuff
   template<CENTERING cent, typename  data_t, unsigned int ncomp, typename Func, typename... Srcs>

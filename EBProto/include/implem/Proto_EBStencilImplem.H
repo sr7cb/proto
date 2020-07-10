@@ -37,7 +37,7 @@ namespace Proto
     m_periodic_domain_bcs_only = a_periodiconly;
     vector< EBIndex<dstCenter> >              dstVoFs;
     vector< LocalStencil<srcCenter, data_t> > stencil;
-
+    std::cout << "going into archive::getstencil" << std::endl;
     m_hasDomainBCs = 
       archive_t::getStencil(dstVoFs, stencil, m_regStencilInterior, 
                             m_regStencilBCS, m_BCApplyBoxes, m_regApplyBox, m_bcsOnly,

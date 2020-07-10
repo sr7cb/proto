@@ -10,18 +10,6 @@ using namespace Proto;
 ///  after this are specific to the test
 typedef Var<double,DIM> V;
 
-////
-PROTO_KERNEL_START 
-void HybridDivergenceF(Var<double, 1>    a_hybridDiv,
-                       Var<double, 1>    a_kappaConsDiv,
-                       Var<double, 1>    a_nonConsDivF,
-                       Var<double, 1>    a_deltaM,
-                       Var<double, 1>    a_kappa)
-{
-  a_hybridDiv(0) = a_kappaConsDiv(0) + (1- a_kappa(0))*a_nonConsDivF(0);
-  a_deltaM(0)    = (1-a_kappa(0))*(a_kappaConsDiv(0) - a_kappa(0)*a_nonConsDivF(0));
-}
-PROTO_KERNEL_END(HybridDivergenceF, HybridDivergence)
 
 PROTO_KERNEL_START 
 void UsetUF(V a_U, double  a_val)
@@ -58,7 +46,7 @@ PROTO_KERNEL_END(setUptF, setUpt)
 
 
 PROTO_KERNEL_START 
-void VsetVF(V a_V, double  a_val, int a_intvar)
+void VsetVF(V a_V, double  a_val)
 {
 //  printf("setv: vptr[0] = %p, vptr[1] = %p\n",a_V.m_ptrs[0],a_V.m_ptrs[1]);
 //  printf("in set V\n");
@@ -75,7 +63,7 @@ void VsetVF(V a_V, double  a_val, int a_intvar)
 PROTO_KERNEL_END(VsetVF, VsetV)
 
 PROTO_KERNEL_START 
-void setVptF(int  a_p[DIM], V a_V, double  a_val, int a_vvar)
+void setVptF(int  a_p[DIM], V a_V, double  a_val)
 {
   for(int idir = 0; idir < DIM; idir++)
   {
@@ -161,37 +149,28 @@ int main(int argc, char* argv[])
     EBBoxData<CELL, double, DIM> V(grid,(*graphs)[ibox]);
     EBBoxData<CELL, double, DIM> W(grid,(*graphs)[ibox]);
     unsigned long long int numFlopsPt = 0;
-    double uval = 1;
-    double vval = 2;
-    printf("going into setU\n");
-    ebforallInPlace(numFlopsPt, "setU", UsetU, grid, U, uval);
-    printf("going into setV\n");
-    int vvar = -1;
-    ebforallInPlace(numFlopsPt, "setV", VsetV, grid, V, vval, vvar);  //tweaking signature to clarify compilers job
-    double wval = 3;
-    printf("going into setWtoUPlusV\n");
-    ebforallInPlace(numFlopsPt, "setWtoUPlusV", WsetWtoUplusV, grid, W, U, V, wval);
-
-    uval = 2;
-    vval = 5;
-    wval = 7;
-    printf("going into setUpt\n");
-    ebforallInPlace_i(numFlopsPt, "setU", setUpt, grid, U, uval);
-    printf("going into setVpt\n");
-    ebforallInPlace_i(numFlopsPt, "setV", setVpt, grid, V, vval, vvar);
-    printf("going into setWpt\n");
-    ebforallInPlace_i(numFlopsPt, "setWtoUPlusV", setWtoUplusVpt, grid, W, U, V, wval);
-
-    uval = 2;
-    vval = 5;
-    wval = 7;
-    printf("going into setUpt (fast version)\n");
-    Box inputbox = U.inputBox();
-    ebFastforallInPlace_i(inputbox, numFlopsPt, "setU", setUpt, grid, U, uval);
-    printf("going into setVpt(fast version)\n");
-    ebFastforallInPlace_i(inputbox, numFlopsPt, "setV", setVpt, grid, V, vval, vvar);
-    printf("going into setWpt(fast version)\n");
-    ebFastforallInPlace_i(inputbox, numFlopsPt, "setWtoUPlusV", setWtoUplusVpt, grid, W, U, V, wval);
+    {
+      double uval = 2;
+      double vval = 5;
+      double wval = 7;
+      printf("going into setUpt\n");
+      ebforallInPlace_i(numFlopsPt, "setU", setUpt, grid, U, uval);
+      printf("going into setVpt\n");
+      ebforallInPlace_i(numFlopsPt, "setV", setVpt, grid, V, vval);
+      printf("going into setWpt\n");
+      ebforallInPlace_i(numFlopsPt, "setWtoUPlusV", setWtoUplusVpt, grid, W, U, V, wval);
+    }
+    {
+      double uval = 1;
+      double vval = 2;
+      printf("going into setU\n");
+      ebforallInPlace(numFlopsPt, "setU", UsetU, grid, U, uval);
+      printf("going into setV\n");
+      ebforallInPlace(numFlopsPt, "setV", VsetV, grid, V, vval);  //tweaking signature to clarify compilers job
+      double wval = 3;
+      printf("going into setWtoUPlusV\n");
+      ebforallInPlace(numFlopsPt, "setWtoUPlusV", WsetWtoUplusV, grid, W, U, V, wval);
+    }
     
 
   }

@@ -40,6 +40,7 @@ namespace Proto
              bool                                        a_periodiconly, 
              Point                                       a_dstGrown)               
   {
+    std::cout << "entering EBStencilArchive::getStencil" << std::endl;
     a_bcOnly = false;
     if(a_stencilName == string("Domain_BC_Only"))
     {
@@ -58,6 +59,7 @@ namespace Proto
     }
     else if(a_stencilName == string("Second_Order_Poisson"))
     {
+      std::cout << "going into getsecondorderdomainstencil" << std::endl;
       bool forceNeumann = false;
       //for this one srcdomain == dstdomain
       //             srcgraph  == dstgraph
@@ -85,6 +87,7 @@ namespace Proto
                                      a_periodiconly,
                                      forceNeumann);            
 
+      std::cout << "emerging from getsecondorderdomainstencil" << std::endl;
     }
     else if(a_stencilName == string("Second_Order_Poisson_All_Neumann"))
     {
@@ -286,6 +289,7 @@ namespace Proto
       PR_error("stencil_archive_cell_cell::stencil string not found");
     }
     return false;//never gets here but this shuts up some compilers;
+    std::cout << "leaving EBStencilArchive::getStencil" << std::endl;
   }
   ///
   template <int order>
