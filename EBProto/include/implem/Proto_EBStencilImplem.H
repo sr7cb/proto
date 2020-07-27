@@ -138,11 +138,16 @@ namespace Proto
   {
     PR_TIME("EBStencil::applyITZ");
     
+    //using std::cout;
+    //using std::endl;
+    //cout << " in applyITZ" << endl;
+
     //first set the boundary conditions at the domain box
     //this fills the ghost cells when the box abuts the domain.
     if(m_hasDomainBCs)
     {
       BoxData<data_t, 1>& castSrc = const_cast<BoxData<data_t, 1> &>(a_src.getRegData());
+      //cout << " going into bc apply" << endl;
       for(int ibc = 0; ibc < 2*DIM; ibc++)
       {
         for(int ivec = 0; ivec < m_regStencilBCS[ibc].size(); ivec++)
@@ -152,19 +157,24 @@ namespace Proto
                                            bcsrcbox, true, 1.0);
         }
       }
+      //cout << " out of  bc apply" << endl;
     }
     if(!m_bcsOnly)
     {
       bool incrementOnly = false;
       //already set stuff to zero if necessary
       bool initToZero    = true;
+      //cout << " going into interior apply" << endl;
+      
       m_regStencilInterior.apply(a_src.getRegData(), 
                                  a_dst.getRegData(),
                                  m_regApplyBox, initToZero, a_scale);
 
+      //cout << " going into irreg apply" << endl;
       m_irregStencil->apply(a_dst, a_src, a_scale, incrementOnly);
     }
     
+    //cout << " leaving applyITZ" << endl;
   }
 
 
@@ -184,10 +194,17 @@ namespace Proto
     }
     else
     {
+      //using std::cout;
+      //using std::endl;
+      //cout << " making incr data" << endl;
       EBBoxData< dstCenter, data_t, 1>   incr(a_dst.inputBox(), a_dst.ebgraph());
+      //cout << "zeroing incr data" << endl;
       incr.setVal(0.);
+      //cout << "apply stencil" << endl;
       applyITZ(incr, a_src, a_scale);
+      //cout << "adding increment" << endl;
       a_dst += incr;
+      //cout << "done with incr" << endl;
     }
   }
               
