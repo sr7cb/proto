@@ -832,6 +832,13 @@ inline std::ostream& operator<<(std::ostream& a_os,
                         unsigned int a_d = 0,
                         unsigned int a_e = 0) const
     {
+      //begin debug
+      int ideb = 0;
+      if(!m_box.contains(a_pt))
+      {
+        ideb = 1;
+      }
+      //end debug
       PROTO_ASSERT(m_box.contains(a_pt),
                    "BoxData::operator(Point a_pt, uint a_c, uchar a_d, uchar a_e)\
                    invalid for a_pt not in this->box()");

@@ -5,7 +5,7 @@
 #include "Proto_gpu.H"
 
 #include "Proto_PAssert.H"
-
+#include <vector>
 #include <iostream>
 #include <array>
 
@@ -45,6 +45,15 @@ namespace Proto
     */
     CUDA_DECORATION inline Point(const int (&a_tuple)[DIM]);
 
+    inline Point(std::vector<int> a_vec)
+    {
+      PR_assert(a_vec.size() >= DIM);
+      for(int idir = 0; idir < DIM; idir++)
+      {
+        (*this)[idir] = a_vec[idir];
+      }
+    }
+    
     /// Variadic Constructor
     /**
        Builds a Point from the first DIM arguments given to this. Any trailing arguments are ignored.
