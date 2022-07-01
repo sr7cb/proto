@@ -1061,6 +1061,16 @@ namespace Proto
                 CInterval   a_comps);
 
 
+      inline ::std::shared_ptr<T>  data() const
+      {
+        return m_data; ///< Data array
+      }
+
+      inline T* rawPtr() const
+      {
+        return m_rawPtr;
+      }
+      
       inline ::std::shared_ptr<T>  getData() const
       {
         return m_data; ///< Data array
