@@ -59,6 +59,7 @@ void Reduction<T,OP,MEM>::reset() {
 
 /// INITIALIZE VALUE
 template<typename T, Operation OP, MemType MEM>
+CUDA_DECORATION
 T Reduction<T,OP,MEM>::init()
 {
     switch (OP) {
@@ -73,6 +74,7 @@ T Reduction<T,OP,MEM>::init()
 
 /// UPDATE VALUE
 template<typename T, Operation OP, MemType MEM>
+CUDA_DECORATION
 void Reduction<T,OP,MEM>::update(T& a_v1, const T a_v2)
 {
     switch(OP) {
@@ -101,9 +103,11 @@ T Reduction<T,OP,MEM>::fetch() {
     if (MEM == DEVICE)
     {
 #ifdef PROTO_CUDA
-        cudaDeviceSynchronize(); // make sure kernels are finished
+        //cudaDeviceSynchronize(); // make sure kernels are finished
+	protoThreadSynchronize();
         proto_memcpy<MEM, HOST>(m_deviTotal, m_hostTemp, sizeof(T));
-        cudaDeviceSynchronize(); // make sure copy to HOST is done (unnecessary?)
+       // cudaDeviceSynchronize(); // make sure copy to HOST is done (unnecessary?)
+	protoThreadSynchronize();
         update(*m_hostTotal, *m_hostTemp);
         // TODO: synchronize multiple streams
 #endif
@@ -112,24 +116,26 @@ T Reduction<T,OP,MEM>::fetch() {
     }
 #ifdef PR_MPI
     T global;
+    auto datatype = mpiDatatype<T>();
     barrier();
     switch (OP)
     {
         case Abs:
         case Max:
-            MPI_Allreduce(m_hostTotal, &global, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+            MPI_Allreduce(m_hostTotal, &global, 1, datatype, MPI_MAX, MPI_COMM_WORLD);
             break;
         case Min:
-            MPI_Allreduce(m_hostTotal, &global, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+            MPI_Allreduce(m_hostTotal, &global, 1, datatype, MPI_MIN, MPI_COMM_WORLD);
             break;
         case Sum:
         case SumAbs:
-            MPI_Allreduce(m_hostTotal, &global, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+            MPI_Allreduce(m_hostTotal, &global, 1, datatype, MPI_SUM, MPI_COMM_WORLD);
             break;
         default:
             MayDay<void>::Abort("Reduction::fetch | Error: Unknown reduction operator.");
             break;
     }
+    barrier();
     return global;
 #else
     return *m_hostTotal;

@@ -40,7 +40,6 @@ BoxData<T,C,MEM,D,E>::BoxData(BoxData<T,C,MEM,D,E>&& a_src)
       m_data(std::move(a_src.m_data)),
       m_rawPtr(a_src.m_rawPtr)
 {
-    std::cout << "Calling BoxData move constructor" << std::endl;
 }
 
 // Define
@@ -73,7 +72,7 @@ void BoxData<T,C,MEM,D,E>::define(
 {
   m_box    = a_src.box();
     m_rawPtr = a_src.data(a_comp);
-    m_data   = a_src.getData();
+    m_data   = a_src.aliasData();
 }           
 
 // Raw Pointer Constructor
@@ -118,7 +117,7 @@ BoxData<T,C,MEM,D,E>::~BoxData()
 {}
 
 
-//=================================================================================================
+//=============================================================================================
 // Data Movement ||
 //===============++
 
@@ -133,6 +132,9 @@ BoxData<T,C,MEM,D,E>& BoxData<T,C,MEM,D,E>::operator=(BoxData<T,C,MEM,D,E>&& a_s
         std::swap<std::shared_ptr<T>>(m_data, a_src.m_data);
         m_rawPtr = a_src.m_rawPtr;
         a_src.m_rawPtr = nullptr;
+#ifdef PROTO_MEM_CHECK
+        BoxDataMemCheck::numMoveAssign()++;
+#endif
     }
     return *this;
 }
@@ -240,13 +242,16 @@ struct boxdataIndexer {
                 else if(Op == BoxDataOp::Assign)
                 {
                     tmp_dst[dstOff] = tmp_src[srcOff];
-                } else if (Op == BoxDataOp::ThresholdMax)
+                }
+/*
+                else if (Op == BoxDataOp::ThresholdMax)
                 {
                     tmp_dst[dstOff] = (tmp_dst[dstOff] > tmp_src[srcOff]) ? tmp_src[srcOff] : tmp_dst[dstOff];
                 } else if (Op == BoxDataOp::ThresholdMin)
                 {
                     tmp_dst[dstOff] = (tmp_dst[dstOff] < tmp_src[srcOff]) ? tmp_src[srcOff] : tmp_dst[dstOff];
                 }
+  */
                 else
                 {
                     printf("boxdataIndexer error: bogus boxdata op input!!!\n");
@@ -300,13 +305,16 @@ struct boxdataIndexer {
                 else if(Op == BoxDataOp::Assign)
                 {
                     tmp_dst[dstOff] = tmp_src[srcOff];
-                } else if (Op == BoxDataOp::ThresholdMax)
+                }
+                /*
+                else if (Op == BoxDataOp::ThresholdMax)
                 {
                     tmp_dst[dstOff] = (tmp_dst[dstOff] > tmp_src[srcOff]) ? tmp_src[srcOff] : tmp_dst[dstOff];
                 } else if (Op == BoxDataOp::ThresholdMin)
                 {
                     tmp_dst[dstOff] = (tmp_dst[dstOff] < tmp_src[srcOff]) ? tmp_src[srcOff] : tmp_dst[dstOff];
                 }
+                */
                 else
                 {
                     printf("boxdataIndexer error: bogus boxdata op input!!!\n");
@@ -356,6 +364,7 @@ struct scalarIndexer
                 {
                     tmp_dst[dstOff] = a_scalar;
                 }
+                /*
                 else if (Op == BoxDataOp::ThresholdMax)
                 {
                     tmp_dst[dstOff] = (tmp_dst[dstOff] > a_scalar) ? a_scalar : tmp_dst[dstOff];
@@ -364,6 +373,7 @@ struct scalarIndexer
                 {
                     tmp_dst[dstOff] = (tmp_dst[dstOff] < a_scalar) ? a_scalar : tmp_dst[dstOff];
                 }
+                */
                 else
                 {
                     printf("scalarIndexer error: bogus boxdata op input!!!\n");
@@ -410,6 +420,7 @@ struct scalarIndexer
                 {
                     tmp_dst[dstOff] = a_scalar;
                 }
+                /*
                 else if (Op == BoxDataOp::ThresholdMax)
                 {
                     tmp_dst[dstOff] = (tmp_dst[dstOff] > a_scalar) ? a_scalar : tmp_dst[dstOff];
@@ -418,6 +429,7 @@ struct scalarIndexer
                 {
                     tmp_dst[dstOff] = (tmp_dst[dstOff] < a_scalar) ? a_scalar : tmp_dst[dstOff];
                 }
+                */
                 else
                 {
                     printf("scalarIndexer error: bogus boxdata op input!!!\n");
@@ -453,9 +465,6 @@ void BoxData<T,C,MEM_SRC,D,E>::copyTo(
             be the same pending a bug fix in boxDataIndexer.");
     
     PR_TIME("BoxData::CopyTo");
-#ifdef PROTO_MEM_CHECK
-    memcheck::numcopies++;
-#endif
     PROTO_ASSERT(contains(a_srcComps),
         "BoxData::copyTo | Error: \
         Source CInterval must be contained in source data component space.");
@@ -494,6 +503,10 @@ void BoxData<T,C,MEM_SRC,D,E>::copyTo(
                     protoGetCurrentStream);
         }
         proto_memcpy<MEM_SRC, MEM_DST>(castSrc, dstPtr, nsize*sizeof(T));
+#ifdef PROTO_MEM_CHECK
+        BoxDataMemCheck::numCopies()++;
+        BoxDataMemCheck::numFastCopies()++;
+#endif
     }
     else
     {
@@ -504,69 +517,73 @@ void BoxData<T,C,MEM_SRC,D,E>::copyTo(
         {
             for (unsigned int dd = 0; dd < a_srcComps.size(1); dd++)
             {
-                int ccSrc = a_srcComps.low(0);
-                int ddSrc = dd + a_srcComps.low(1);
-                int eeSrc = ee + a_srcComps.low(2);
-                int ccDst = a_dstComps.low(0);
-                int ddDst = dd + a_dstComps.low(1);
-                int eeDst = ee + a_dstComps.low(2);
-
-                BoxData<T,1,MEM_SRC> srcbd = slice(*this, ccSrc, ddSrc, eeSrc);
-                BoxData<T,1,MEM_DST> dstbd = slice(a_dst, ccDst, ddDst, eeDst);
-
-                int srcPencilOffset = srcbd.box().size(0);
-                int dstPencilOffset = dstbd.box().size(0);
-                int pencilLength = dstBox.size(0);
-                int srcStartOffset = srcbd.box().index(srcBox.low());
-                int dstStartOffset = dstbd.box().index(dstBox.low());
-                int numPencils = dstBox.flatten(0).size()*a_srcComps.size(0);
-                
-                /*
-                std::cout << "src box: " << srcBox << " | dst box: " << dstBox << std::endl;
-                std::cout << "src data box: " << srcbd.box();
-                std::cout << " | dst data box: " << dstbd.box() << std::endl;
-                std::cout << "src pencil offset: " << srcPencilOffset;
-                std::cout << " | dst pencil offset: " << dstPencilOffset << std::endl;
-                std::cout << "pencil length: " << pencilLength << std::endl;
-                std::cout << "number of pencils: " << numPencils << std::endl;
-                std::cout << "src start offset: " << srcStartOffset;
-                std::cout << " | dst start offset: " << dstStartOffset << std::endl;
-                */
-                T* d_srcPtr = (T*)(srcbd.data() + srcStartOffset);
-                T* d_dstPtr = (T*)(dstbd.data() + dstStartOffset);
-                if (MEM_SRC == DEVICE && MEM_DST == DEVICE)
+                // DEVICE <--> DEVICE (INDEXER KERNEL LAUNCH)
+                if ((MEM_SRC == DEVICE) && (MEM_DST == DEVICE))
                 {
+                    // No loop over C component needed because each kernel launch
+                    // executes copy over all components on the C axis
+                    int ccSrc = a_srcComps.low(0);
+                    int ddSrc = dd + a_srcComps.low(1);
+                    int eeSrc = ee + a_srcComps.low(2);
+                    int ccDst = a_dstComps.low(0);
+                    int ddDst = dd + a_dstComps.low(1);
+                    int eeDst = ee + a_dstComps.low(2);
+
+                    BoxData<T,1,MEM_SRC> srcbd = slice(*this, ccSrc, ddSrc, eeSrc);
+                    BoxData<T,1,MEM_DST> dstbd = slice(a_dst, ccDst, ddDst, eeDst);
+
+                    T* d_srcPtr = (T*)(srcbd.data());
+                    T* d_dstPtr = (T*)(dstbd.data());
+
                     unsigned int begin  = 0;
                     unsigned int end    = dstBox.size();
                     unsigned int stride = dstBox.size(0);
                     unsigned int blocks = dstBox.flatten(0).size();
-                    /*
-                    protoLaunchKernelMemAsyncT<MEM_SRC,
-                        boxdataIndexer<BoxDataOp::Copy,T,C>>(
-                                blocks, stride,0,
-                                protoGetCurrentStream, begin, end, d_srcPtr, d_dstPtr,
-                                srcBox, srcbd.box(), dstbd.box(),
-                                a_dstShift, srcbd.box().size(), dstbd.box().size());
-                    */
+
                     protoLaunchKernelMemAsyncT<MEM_SRC,
                         boxdataIndexer<BoxDataOp::Copy,T,C>>(
                                 blocks, stride,0,
                                 protoGetCurrentStream, begin, end,
-                                d_srcPtr - srcStartOffset, d_dstPtr-dstStartOffset,
+                                d_srcPtr, d_dstPtr,
                                 srcBox, srcbd.box(), dstbd.box(),
                                 a_dstShift, srcbd.box().size(), dstbd.box().size());
+                // ALL OTHER CASES (PENCILING)
                 } else {
-                    for (int pi = 0; pi < numPencils; pi++)
+                    // Unlike the DEVICE <--> DEVICE case, here we need the loop over C
+                    for (unsigned int cc = 0; cc < a_srcComps.size(0); cc++)
                     {
-                        proto_memcpy<MEM_SRC, MEM_DST>(d_srcPtr, d_dstPtr, pencilLength*sizeof(T));
-                        d_srcPtr += srcPencilOffset;
-                        d_dstPtr += dstPencilOffset;
+                        int ccSrc = cc + a_srcComps.low(0);
+                        int ddSrc = dd + a_srcComps.low(1);
+                        int eeSrc = ee + a_srcComps.low(2);
+                        int ccDst = cc + a_dstComps.low(0);
+                        int ddDst = dd + a_dstComps.low(1);
+                        int eeDst = ee + a_dstComps.low(2);
+
+                        BoxData<T,1,MEM_SRC> srcbd = slice(*this, ccSrc, ddSrc, eeSrc);
+                        BoxData<T,1,MEM_DST> dstbd = slice(a_dst, ccDst, ddDst, eeDst);
+
+                        int srcPencilOffset = srcbd.box().size(0);
+                        int dstPencilOffset = dstbd.box().size(0);
+                        int pencilLength = dstBox.size(0);
+                        int srcStartOffset = srcbd.box().index(srcBox.low());
+                        int dstStartOffset = dstbd.box().index(dstBox.low());
+                        int numPencils = dstBox.flatten(0).size();
+                        
+                        Box srcPencilBox = srcBox.flatten(0);
+                        for (auto pi : srcPencilBox)
+                        {
+                            T* d_srcPtr = (T*)(srcbd.data(pi));
+                            T* d_dstPtr = (T*)(dstbd.data(pi + a_dstShift));
+                            proto_memcpy<MEM_SRC, MEM_DST>(d_srcPtr, d_dstPtr, pencilLength*sizeof(T));
+                        }
                     }
                 }
-                /*
-                */
             } // end for dd
         } // end for ee
+#ifdef PROTO_MEM_CHECK
+        BoxDataMemCheck::numCopies()++;
+        BoxDataMemCheck::numSlowCopies()++;
+#endif
     } // end slow copy 
 }
 
@@ -576,6 +593,7 @@ void BoxData<T,C,MEM_SRC,D,E>::copyTo(
 
 // Compute Index
 template <class T, unsigned int C, MemType MEM, unsigned char D, unsigned char E>
+CUDA_DECORATION
 size_t BoxData<T,C,MEM,D,E>::index(
         const Point a_pt,
         unsigned int a_c,
@@ -597,6 +615,7 @@ size_t BoxData<T,C,MEM,D,E>::index(
 
 // Point Accessor
 template <class T, unsigned int C, MemType MEM, unsigned char D, unsigned char E>
+CUDA_DECORATION
 T& BoxData<T,C,MEM,D,E>::operator()(
         const Point&    a_pt,
         unsigned int    a_c,
@@ -960,7 +979,7 @@ void BoxData<T,C,MEM,D,E>::setVal(const T& a_val)
     );
     */
 }
-
+/*
 template <class T, unsigned int C, MemType MEM, unsigned char D, unsigned char E>
 void BoxData<T,C,MEM,D,E>::clampVal(const T& a_min, const T& a_max)
 {
@@ -968,7 +987,7 @@ void BoxData<T,C,MEM,D,E>::clampVal(const T& a_min, const T& a_max)
     this->operatorT<BoxDataOp::ThresholdMax>(a_max);
     this->operatorT<BoxDataOp::ThresholdMin>(a_min);
 }
-
+*/
 // Set To Zero
 template <class T, unsigned int C, MemType MEM, unsigned char D, unsigned char E>
 void BoxData<T,C,MEM,D,E>::setToZero()
@@ -1233,9 +1252,20 @@ void BoxData<T,C,MEM,D,E>::linearOut(
     PROTO_ASSERT(this->contains(a_comps),
             "BoxData::linearOut | Error: \
             a_comps must be contained in the component space of *this.");
-
-    BoxData<T,C,MEM,D,E> tmp((T*)a_buf, a_box, C);
-    copyTo(tmp, a_box, a_comps,  Point::Zeros(), CInterval( 0, a_comps.size(0)-1));
+    PROTO_ASSERT(pointerMemType(a_buf)==MEM,
+            "BoxData::linearOut | Error: \
+            Buffer and BoxData have different MemType.");
+    T *ptr = static_cast<T*>(a_buf);
+    unsigned int c_lo = a_comps.low(0), d_lo = a_comps.low(1), e_lo = a_comps.low(2);
+    unsigned int c_hi = a_comps.high(0), d_hi = a_comps.high(1), e_hi = a_comps.high(2);
+    for (int i=c_lo; i<=c_hi; i++)
+        for (int j=d_lo; j<=d_hi; j++)
+            for (int k=e_lo; k<=e_hi; k++) {
+                BoxData<T,1,MEM> dest(ptr, a_box, 1);
+                BoxData<T,1,MEM> src = slice(*this,i,j,k);
+                src.copyTo(dest, a_box);
+                ptr += a_box.size();
+            }
 }
 
 // Buffer Write (Primitive)
@@ -1260,14 +1290,26 @@ void BoxData<T,C,MEM,D,E>::linearIn(
 
     PR_TIME("BoxData::linearIn");
     PROTO_ASSERT(m_box.contains(a_box),
-            "BoxData::linearOut | Error: \
+            "BoxData::linearIn | Error: \
             a_box must be a subset of this->box().");
     PROTO_ASSERT(this->contains(a_comps),
-            "BoxData::linearOut | Error: \
+            "BoxData::linearIn | Error: \
             a_comps must be contained in the component space of *this.");
+    PROTO_ASSERT(pointerMemType(a_buf)==MEM,
+            "BoxData::linearIn | Error: \
+            Buffer and BoxData have different MemType.");
 
-   BoxData<T,C,MEM,D,E> tmp((T*) a_buf, a_box, C);
-   tmp.copyTo(*this, a_box, CInterval(0, a_comps.size(0)-1),  Point::Zeros(), a_comps);
+    T *ptr = static_cast<T*>(a_buf);
+    unsigned int c_lo = a_comps.low(0), d_lo = a_comps.low(1), e_lo = a_comps.low(2);
+    unsigned int c_hi = a_comps.high(0), d_hi = a_comps.high(1), e_hi = a_comps.high(2);
+    for (int i=c_lo; i<=c_hi; i++)
+        for (int j=d_lo; j<=d_hi; j++)
+            for (int k=e_lo; k<=e_hi; k++) {
+                BoxData<T,1,MEM> src(ptr, a_box);
+                BoxData<T,1,MEM> dest = slice(*this,i,j,k);
+                src.copyTo(dest, a_box);
+                ptr += a_box.size();
+            }
 }
 
 // Buffer Read (Primitive)
@@ -1298,7 +1340,7 @@ template <class T, unsigned int C, MemType MEM, unsigned char D, unsigned char E
 template<unsigned int CC, unsigned char DD, unsigned char EE>
 bool BoxData<T,C,MEM,D,E>::isAlias(const BoxData<T, CC, MEM, DD, EE>& a_src) const
 {
-    return (m_data.get() == a_src.m_data.get());
+    return (this->aliasData() == a_src.aliasData());
 }
 
 // Simple Print

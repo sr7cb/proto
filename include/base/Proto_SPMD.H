@@ -82,5 +82,20 @@ namespace Proto
 #endif
     }
 
+#ifdef PR_MPI
+    template<typename T>
+    inline MPI_Datatype mpiDatatype()
+    {
+        // TODO: This is an error, but the headers wont let me use MayDay here. 
+        return MPI_DATATYPE_NULL;
+    }
+    
+    template<>
+    inline MPI_Datatype mpiDatatype<int>(){return MPI_INT;}
+    
+    template<>
+    inline MPI_Datatype mpiDatatype<double>(){return MPI_DOUBLE;}
+#endif
+
 }
 #endif

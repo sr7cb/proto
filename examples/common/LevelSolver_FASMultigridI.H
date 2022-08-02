@@ -99,6 +99,10 @@ LevelSolver_FASMultigrid<OpType, T, MEM>::solve(
         h5.writeLevel(dx, a_state, "MG_STATE_I%i", 0);
         h5.writeLevel(dx, a_force, "MG_FORCE");
         pout() << "MG solve: initial residual = " << res0 << std::endl;
+        if (procID() == 0)
+        {
+            std::cout << "MG solve: initial residual = " << res0 << std::endl;
+        }
     }
     T res;
     for (int ii = 0; ii < a_maxIter; ii++)
@@ -113,6 +117,11 @@ LevelSolver_FASMultigrid<OpType, T, MEM>::solve(
             h5.writeLevel(dx, a_state, "MG_STATE_I%i", ii+1);
             pout() << "\tMG solve: resnorm = " << res;
             pout() << " | integral = " << m_residual.integrate(dx) << std::endl;
+            if (procID() == 0)
+            {
+                std::cout << "\tMG solve: resnorm = " << res;
+                std::cout << " | integral = " << m_residual.integrate(dx) << std::endl;
+            }
         }
         if (res < a_tolerance*res0) { break; }
     }
@@ -309,7 +318,7 @@ LevelSolver_FASMultigrid<OpType, T, MEM>::MGLevel::coarseForce(
         auto& state_i = a_state[*iter];
         auto& resC_i  = m_crseLocal[*iter];
         auto& force_i = a_force[*iter];
-        auto res = m_levelOp.op()(state_i, iter.box());
+        auto res = m_levelOp.op()(state_i, a_state.layout()[*iter]);
         res += force_i;
         resC_i |= m_average(res);
     }
@@ -318,7 +327,7 @@ LevelSolver_FASMultigrid<OpType, T, MEM>::MGLevel::coarseForce(
     {
         auto& state_i = a_crseState[*iter];
         auto& force_i = a_crseForce[*iter];
-        auto lphi = m_crseMG->m_levelOp.op()(state_i, iter.box());
+        auto lphi = m_crseMG->m_levelOp.op()(state_i, a_crseForce.layout()[*iter]);
         force_i -= lphi;
     }
 }
@@ -359,7 +368,7 @@ LevelSolver_FASMultigrid<OpType, T, MEM>::MGLevel::relax(
         {
             auto& state_i = a_state[*iter];
             auto& force_i = a_force[*iter];
-            auto res = m_levelOp.op()(state_i, iter.box());
+            auto res = m_levelOp.op()(state_i, a_state.layout()[*iter]);
             res += force_i;
             state_i += m_increment(res);
         }

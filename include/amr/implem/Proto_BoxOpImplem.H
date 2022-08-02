@@ -48,9 +48,11 @@ BoxOp<T, C_STATE, C_AUX, MEM>::define(std::array<T, DIM> a_dx)
     m_scaleDiag = 0;
     m_scaleFlux = 1;
     m_dx = a_dx;
-    
+    m_time = 0;
+        
     m_definedFlux = true;
     m_definedSrce = true;
+    init(); //user initialization
 }
 
 template <typename T,
@@ -74,8 +76,6 @@ BoxOp<T, C_STATE, C_AUX, MEM>::operator()(
         {
             Stencil<T> DIV = 1.0*Shift::Basis(dir, 1)
                            - 1.0*Shift::Zeros();
-            //auto fluxBox = a_output.box().grow(dir, Side::Hi, 1);
-            //StateData flux_d(fluxBox);
             auto& flux_d = a_fluxes[dir];
             flux(flux_d, a_state, a_aux, dir);
             if (!m_definedFlux) {break; }
@@ -129,8 +129,6 @@ BoxOp<T, C_STATE, C_AUX, MEM>::operator()(
         {
             Stencil<T> DIV = 1.0*Shift::Basis(dir, 1)
                            - 1.0*Shift::Zeros();
-            //auto fluxBox = a_output.box().grow(dir, Side::Hi, 1);
-            //StateData flux_d(fluxBox);
             auto& flux_d = a_fluxes[dir];
             flux(flux_d, a_state, dir);
             if (!m_definedFlux) {break; }
@@ -160,6 +158,7 @@ BoxOp<T, C_STATE, C_AUX, MEM>::operator()(
     }
     if (a_scale != 1.0)
     {
+        std::cout << "Multiplying by scale: " << a_scale << std::endl;
         a_output *= a_scale;
     }
 }
@@ -336,6 +335,16 @@ template <typename T,
 void BoxOp<T, C_STATE, C_AUX, MEM>::setFluxScale(T a_value)
 {
     m_scaleFlux = a_value;
+}
+
+/// Set Time
+template <typename T,
+    unsigned int C_STATE,
+    unsigned int C_AUX,
+    MemType MEM>
+void BoxOp<T, C_STATE, C_AUX, MEM>::setTime(T a_time)
+{
+    m_time = a_time;
 }
 
 /// Get Grid Spacing
