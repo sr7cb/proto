@@ -238,8 +238,9 @@ void CoordPermutation::print() const
         {
             if (m_matrix[jj][ii] != 0)
             {
-                pout() << ii << " --> " << jj;
-                pout() << " (" << m_matrix[jj][ii] << ")" << std::endl;
+              //breaks chombo transition
+//                pout() << ii << " --> " << jj;
+//                pout() << " (" << m_matrix[jj][ii] << ")" << std::endl;
             }
         }
     }
@@ -248,69 +249,71 @@ void CoordPermutation::print() const
 
 void CoordPermutation::printMatrix() const
 {
-    for (auto row : m_matrix)
-    {
-        for (auto val : row)
-        {
-            pout() << val << ", ";
-        }
-        pout() << std::endl;
+//    for (auto row : m_matrix)
+//    {
+//        for (auto val : row)
+//        {
+//              //breaks chombo transition
+//            pout() << val << ", ";
+//        }
+//        pout() << std::endl;
     }
 }
 
-bool CoordPermutation::isIdentity() const
-{
-    for (int ii = 0; ii < DIM; ii++)
-    {
-        for (int jj = 0; jj < DIM; jj++)
-        {
-            if ((ii != jj) && (m_matrix[ii][jj] != 0)) { return false; }
-            if ((ii == jj) && (m_matrix[ii][jj] != 1)) { return false; }
-        }
-    }
-    return true;
-}
+//not compiling
+//bool CoordPermutation::isIdentity() const
+//{
+//    for (int ii = 0; ii < DIM; ii++)
+//    {
+//        for (int jj = 0; jj < DIM; jj++)
+//        {
+//            if ((ii != jj) && (m_matrix[ii][jj] != 0)) { return false; }
+//            if ((ii == jj) && (m_matrix[ii][jj] != 1)) { return false; }
+//        }
+//    }
+//    return true;
+//}
 
-bool CoordPermutation::isValid() const
-{
-    for (auto row : m_matrix)
-    {
-        int nonZeros = 0;
-        for (auto val : row)
-        {
-            if (val != 0)
-            {
-                nonZeros++;
-                if (val < -1 || val > 1)
-                {
-                    return false;
-                }
-            }
-        }
-        if (nonZeros != 1) { return false; }
-    }
-    return true;
-}
+//bool CoordPermutation::isValid() const
+//{
+//    for (auto row : m_matrix)
+//    {
+//        int nonZeros = 0;
+//        for (auto val : row)
+//        {
+//            if (val != 0)
+//            {
+//                nonZeros++;
+//                if (val < -1 || val > 1)
+//                {
+//                    return false;
+//                }
+//            }
+//        }
+//        if (nonZeros != 1) { return false; }
+//    }
+//    return true;
+//}
 
-CoordPermutation operator*(const CoordPermutation& a_A, const CoordPermutation& a_B)
-{
-    auto A = a_A.matrix();
-    auto B = a_B.matrix();
-    std::array<std::array<int, DIM>, DIM> M;
-    for (int ii = 0; ii < DIM; ii++)
-    {
-        for (int jj = 0; jj < DIM; jj++)
-        {
-            int Mij = 0;
-            for (int kk = 0; kk < DIM; kk++)
-            {
-                Mij += A[kk][ii]*B[jj][kk];
-            }
-            M[jj][ii] = Mij;
-        }
-    }
-    CoordPermutation R;
-    R.defineMatrix(M);
-    return R;
-}
+//CoordPermutation operator*(const CoordPermutation& a_A, const CoordPermutation& a_B)
+//{
+//    auto A = a_A.matrix();
+//    auto B = a_B.matrix();
+//    std::array<std::array<int, DIM>, DIM> M;
+//    for (int ii = 0; ii < DIM; ii++)
+//    {
+//        for (int jj = 0; jj < DIM; jj++)
+//        {
+//            int Mij = 0;
+//            for (int kk = 0; kk < DIM; kk++)
+//            {
+//                Mij += A[kk][ii]*B[jj][kk];
+//            }
+//            M[jj][ii] = Mij;
+//        }
+//    }
+//    CoordPermutation R;
+//    R.defineMatrix(M);
+//    return R;
+//}
 
