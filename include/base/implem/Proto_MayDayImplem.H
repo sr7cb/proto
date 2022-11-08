@@ -72,7 +72,7 @@ void MayDay<T>::Error(const char * const a_msg, int exit_code)
   MPI_Abort(MPI_COMM_WORLD ,exit_code);
   // this shouldn't return, but if it does, exit serially
 #endif
-  Proto::pout()<<std::endl;
+//  Proto::pout()<<std::endl;
   exit(exit_code);
 }
 template <typename T>
@@ -80,7 +80,7 @@ void MayDay<T>::Abort(const char * const a_msg)
 {
   bool maydayabortFlag = true; //used by registerDebugger, that is listening for SIGABORT
   write_to_stderr_without_buffering(a_msg);
-  Proto::pout()<<std::endl;
+//  Proto::pout()<<std::endl;
   if (maydayabortFlag) abort();
 #ifdef CH_MPI
   MPI_Abort(MPI_COMM_WORLD ,CH_DEFAULT_ERROR_CODE);

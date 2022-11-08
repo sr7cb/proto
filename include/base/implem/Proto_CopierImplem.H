@@ -461,6 +461,8 @@ template<class OP, typename P_SRC, typename P_DST, MemType SRC_MEM, MemType DST_
 void
 Copier<OP, P_SRC, P_DST, SRC_MEM, DST_MEM>::print() const
 {
+#if 0
+  //breaks chombo
     using Proto::pout;
     pout() << std::endl << "-----------------------------------------------------------------------" << std::endl;
     pout() << "Local Copies: " << std::endl;
@@ -484,6 +486,7 @@ Copier<OP, P_SRC, P_DST, SRC_MEM, DST_MEM>::print() const
         pout() << item.fromRegion << " @ " << item.fromIndex.global();
         pout() << " ==> " << item.toRegion << " @ " << item.toIndex.global() << std::endl;
     }
+#endif    
 }
 //========================================================================
 // MOTIONITEM, BUFFERENTRY, and COPYITERATOR FUNCTIONS

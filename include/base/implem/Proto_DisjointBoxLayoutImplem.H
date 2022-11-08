@@ -431,31 +431,31 @@ DisjointBoxLayout::mirrorSymmetry(Point a_origin, int a_coord) const
 void
 DisjointBoxLayout::print(std::string a_name) const
 {
-    using Proto::pout;
-
-    pout() << "Disjoint Box Layout: " << a_name << std::endl;
-    pout() << std::setw(40) << std::setfill('-') << "-" << std::endl;
-    pout() << std::setfill(' ');
-    pout() << std::setw(10) << std::left << "Domain: "   << m_problemDomain.box() << std::endl;
-    pout() << std::setw(10) << std::left << "Box Size: " << m_boxSize << std::endl;
-    pout() << std::setw(40) << std::setfill('-') << "-" << std::endl;
-    pout() << std::setfill(' ');
-    if (size() == 0)
-    {
-        pout() << "( EMPTY LAYOUT ) " << std::endl;
-        pout() << setfill('\0');
-        return;
-    }
-    pout() << std::right;
-    for (int ii = 0; ii < size(); ii++)
-    {
-        Point p = boxes()[ii].first;
-        Box b = Box(p,p).refine(m_boxSize);
-        pout() << std::setw(4) << boxes()[ii].second << " | ";
-        pout() << b << " | ";
-        pout() << p << std::endl;
-    }
-    pout() << setfill(' ') << std::endl;
+//    using Proto::pout;
+//
+//    pout() << "Disjoint Box Layout: " << a_name << std::endl;
+//    pout() << std::setw(40) << std::setfill('-') << "-" << std::endl;
+//    pout() << std::setfill(' ');
+//    pout() << std::setw(10) << std::left << "Domain: "   << m_problemDomain.box() << std::endl;
+//    pout() << std::setw(10) << std::left << "Box Size: " << m_boxSize << std::endl;
+//    pout() << std::setw(40) << std::setfill('-') << "-" << std::endl;
+//    pout() << std::setfill(' ');
+//    if (size() == 0)
+//    {
+//        pout() << "( EMPTY LAYOUT ) " << std::endl;
+//        pout() << setfill('\0');
+//        return;
+//    }
+//    pout() << std::right;
+//    for (int ii = 0; ii < size(); ii++)
+//    {
+//        Point p = boxes()[ii].first;
+//        Box b = Box(p,p).refine(m_boxSize);
+//        pout() << std::setw(4) << boxes()[ii].second << " | ";
+//        pout() << b << " | ";
+//        pout() << p << std::endl;
+//    }
+//    pout() << setfill(' ') << std::endl;
 }
 
 inline std::ostream& operator<< (std::ostream& os, const DisjointBoxLayout& a_dbl)

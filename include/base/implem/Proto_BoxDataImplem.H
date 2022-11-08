@@ -1523,19 +1523,19 @@ bool BoxData<T,C,MEM,D,E>::isAlias(const BoxData<T, CC, MEM, DD, EE>& a_src) con
 template <typename T, unsigned int C, MemType MEM, unsigned char D, unsigned char E>
 void BoxData<T,C,MEM,D,E>::print() const
 {
-    using Proto::pout;
-
-    pout() << "BoxData<" << C << ", " << (int)D << ", " << (int)E << ">" << std::endl;
-    pout() << "Domain: " << m_box << " | Size: " << this->size() << std::endl;
-    if (this->size() <= 0){return;}
-    for (int ee = 0; ee < E; ee++)
-        for (int dd = 0; dd < D; dd++)
-            for (int cc = 0; cc < C; cc++)
-            {
-                pout() << "\tComponent (" << cc << ", " << dd << ", " << ee << "): ";
-                pout() << " | Max: " << this->max(cc,dd,ee) << " | Min: " << this->min(cc,dd,ee);
-                pout() << std::endl;
-            }
+//    using Proto::pout;
+//
+//    pout() << "BoxData<" << C << ", " << (int)D << ", " << (int)E << ">" << std::endl;
+//    pout() << "Domain: " << m_box << " | Size: " << this->size() << std::endl;
+//    if (this->size() <= 0){return;}
+//    for (int ee = 0; ee < E; ee++)
+//        for (int dd = 0; dd < D; dd++)
+//            for (int cc = 0; cc < C; cc++)
+//            {
+//                pout() << "\tComponent (" << cc << ", " << dd << ", " << ee << "): ";
+//                pout() << " | Max: " << this->max(cc,dd,ee) << " | Min: " << this->min(cc,dd,ee);
+//                pout() << std::endl;
+//            }
 }
 
 // Print Data
@@ -1559,6 +1559,8 @@ void BoxData<T,C,MEM,D,E>::printData(
         int a_c, int a_d, int a_e,
         int a_prec) const
 {
+#if 0
+  //breaks chombo 
     using std::cout;
     using std::endl;
     std::ostream& out = Proto::pout();
@@ -1677,6 +1679,7 @@ void BoxData<T,C,MEM,D,E>::printData(
 #endif
             }
     out << endl;
+#endif    
 }
 
 //=================================================================================================
