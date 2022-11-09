@@ -79,7 +79,7 @@ namespace Proto
             \param refRatios    Refinement ratios for each *coarse* level. 
             \param maxLevels    The maximum number of levels allowable in this grid.
         */
-        inline AMRGrid(
+      inline AMRGrid(*co
             std::vector<DisjointBoxLayout>& a_layouts,
             std::vector<Point>& a_refRatios,
             int a_maxLevels);
