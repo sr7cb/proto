@@ -11,6 +11,7 @@
 #include <cmath>
 #include "Proto_accel.H"
 #include "Proto_Point.H"
+#include <limits>
 
 namespace Proto {
 
