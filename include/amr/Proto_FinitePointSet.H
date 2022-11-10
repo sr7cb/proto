@@ -2,8 +2,9 @@
 #ifndef _PROTO_FINITE_POINT_SET_
 #define _PROTO_FINITE_POINT_SET_
 
-#include "Proto_Box.H"
-#include "Proto_ProblemDomain.H"
+#include "Proto.H"
+
+
 
 namespace Proto
 {

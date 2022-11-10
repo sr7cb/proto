@@ -3,8 +3,8 @@
 #define _PROTO_AMR_GRID_
 
 #include "Proto_FinitePointSet.H"
-#include "Proto_DisjointBoxLayout.H"
-#include "Proto_LevelBoxData.H"
+#include "../base/Proto_DisjointBoxLayout.H"
+#include "../base/Proto_LevelBoxData.H"
 #include "Proto_InterpStencilTP.H"
 
 //#define PR_AMR_REFRATIO 2
@@ -79,10 +79,9 @@ namespace Proto
             \param refRatios    Refinement ratios for each *coarse* level. 
             \param maxLevels    The maximum number of levels allowable in this grid.
         */
-      inline AMRGrid(*co
-            std::vector<DisjointBoxLayout>& a_layouts,
-            std::vector<Point>& a_refRatios,
-            int a_maxLevels);
+      inline AMRGrid(std::vector<DisjointBoxLayout>& a_layouts,
+                     std::vector<Point>& a_refRatios,
+                     int a_maxLevels);
         
         /// Single-Level Constructor
         /**
