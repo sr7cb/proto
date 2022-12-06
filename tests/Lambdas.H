@@ -123,6 +123,13 @@ MBProblemDomain buildCubeSphere(int a_domainSize)
 }
 #endif
 
+MBProblemDomain buildIdentity(int a_domainSize)
+{
+    MBProblemDomain domain(1);
+    domain.defineDomain(0, Point::Ones(a_domainSize));
+    return domain;
+}
+
 MBProblemDomain buildXPoint(int a_domainSize)
 {
     MBProblemDomain domain(XPOINT_SIZE);
@@ -155,6 +162,10 @@ void f_XPointMapF(Point& a_pt, Var<double,3,MEM>& a_data, unsigned int a_block, 
     a_data(2) = 0;
 }
 PROTO_KERNEL_END(f_XPointMapF, f_XPointMap);
+
+PROTO_MAP_START(IdentityMap)
+    x = X; y = Y; z = Z;
+PROTO_MAP_END(IdentityMap)
 
 PROTO_MAP_START(XPointMap)
     double numBlocks = XPOINT_SIZE;
@@ -377,7 +388,26 @@ PROTO_KERNEL_END(cosxFuncF,cosxFunc)
 
 template<unsigned int C, MemType MEM>
 PROTO_KERNEL_START
-void f_phiF(const Point& a_pt, Var<double, C, MEM>& a_data, double a_dx, Point a_k, Point a_offset)
+void f_phiMF(const Point& a_pt, Var<double, C, MEM>& a_data, Var<double, DIM, MEM>& a_X,
+        Point a_k, Array<double, DIM> a_offset)
+{
+    double phi = 1.0;
+    for (int dir = 0; dir < DIM; dir++)
+    {
+        double k = a_k[dir]*M_PI*2;
+        phi *= sin(k*(a_X(dir) + a_offset[dir]));
+    }
+    for (int ii = 0; ii < C; ii++)
+    {
+        a_data(ii) = phi;
+    }
+}
+PROTO_KERNEL_END(f_phiMF, f_phiM);
+
+template<unsigned int C, MemType MEM>
+PROTO_KERNEL_START
+void f_phiF(const Point& a_pt, Var<double, C, MEM>& a_data,
+        double a_dx, Point a_k, Point a_offset)
 {
     double x[DIM];
     double k[DIM];

@@ -204,6 +204,7 @@ unsigned int BoxPartition::find(Point a_pt)
 
 void BoxPartition::print() const
 {
+<<<<<<< HEAD
 //    pout() << "Box Partition: " << std::endl;
 //    pout() << "\tPatch Domain: " << m_patchDomain.box() << std::endl;
 //    pout() << "\tNum Boxes: " << numBoxes() << std::endl;
@@ -221,6 +222,26 @@ void BoxPartition::print() const
 //    {
 //        pout() << "\t\tPatch: " << item.first << " | Proc: " << item.second << std::endl; 
 //    }
+=======
+    using Proto::pout;
+    pout() << "Box Partition: " << std::endl;
+    pout() << "\tPatch Domain: " << m_patchDomain.box() << std::endl;
+    pout() << "\tNum Boxes: " << numBoxes() << std::endl;
+    pout() << "\tNum Procs: " << numProcs() << std::endl;
+    pout() << "\tData By Processor: " << std::endl;
+    for (auto procData : m_procMap)
+    {
+        unsigned int proc = procData.first;
+        pout() << "\t\tProc: " << proc << " | NumBoxes: " << numBoxes(proc);
+        pout() << " | Start Index: " << procStartIndex(proc);
+        pout() << " | End Index: " << procEndIndex(proc) << std::endl;
+    }
+    pout() << "\tData Partition: " << std::endl;
+    for (auto item : m_partition)
+    {
+        pout() << "\t\tPatch: " << item.first << " | Proc: " << item.second << std::endl; 
+    }
+>>>>>>> master
 }
 
 template<typename... vals>

@@ -3,20 +3,25 @@
 
 using namespace Proto;
 
-void f_const (Point& a_pt, Var<double>& a_data, double a_dx, double a_value)
+PROTO_KERNEL_START
+void f_const_0(Point& a_pt, Var<double>& a_data, double a_dx, double a_value)
 {
     a_data(0) = a_value;
 }
+PROTO_KERNEL_END(f_const_0, f_const);
 
-void f_sin (Point& a_pt, Var<double>& a_data, double a_dx)
+PROTO_KERNEL_START
+void f_sin_0(Point& a_pt, Var<double>& a_data, double a_dx)
 {
     double x = a_pt[0]*a_dx + a_dx/2.0;
     double y = a_pt[1]*a_dx + a_dx/2.0;
     
     a_data(0) = sin(2.0*M_PI*(x + y));
 }
+PROTO_KERNEL_END(f_sin_0, f_sin);
 
-void f_tags_line (Point& a_pt, Var<short>& a_data, double a_dx, Point a_origin)
+PROTO_KERNEL_START
+void f_tags_line_0(Point& a_pt, Var<short>& a_data, double a_dx, Point a_origin)
 {
     std::array<double, DIM> x;
     for (int ii = 0; ii < DIM; ii++)
@@ -31,8 +36,10 @@ void f_tags_line (Point& a_pt, Var<short>& a_data, double a_dx, Point a_origin)
         a_data(0) = 0;
     }
 }
+PROTO_KERNEL_END(f_tags_line_0, f_tags_line);
 
-void f_tags_sphere (Point& a_pt, Var<short>& a_data, double a_dx, Point a_origin)
+PROTO_KERNEL_START
+void f_tags_sphere_0(Point& a_pt, Var<short>& a_data, double a_dx, Point a_origin)
 {
     std::array<double, DIM> x;
     double r = 0;
@@ -51,8 +58,10 @@ void f_tags_sphere (Point& a_pt, Var<short>& a_data, double a_dx, Point a_origin
         a_data(0) = 0;
     }
 }
+PROTO_KERNEL_END(f_tags_sphere_0, f_tags_sphere);
 
-void f_tags_corner (Point& a_pt, Var<short>& a_data, double a_dx, Point a_corner)
+PROTO_KERNEL_START
+void f_tags_corner_0(Point& a_pt, Var<short>& a_data, double a_dx, Point a_corner)
 {
     if (a_pt == a_corner)
     {
@@ -61,8 +70,10 @@ void f_tags_corner (Point& a_pt, Var<short>& a_data, double a_dx, Point a_corner
         a_data(0) = 0;
     }
 }
+PROTO_KERNEL_END(f_tags_corner_0, f_tags_corner);
 
-void f_gaussian (Point& a_pt, Var<double>& a_data, double a_dx, Point a_origin, double a_sigma)
+PROTO_KERNEL_START
+void f_gaussian_0(Point& a_pt, Var<double>& a_data, double a_dx, Point a_origin, double a_sigma)
 {
     std::array<double, DIM> x;
     double rr = 0;
@@ -74,13 +85,14 @@ void f_gaussian (Point& a_pt, Var<double>& a_data, double a_dx, Point a_origin, 
    
     a_data(0) = exp(-rr / (2.0*a_sigma*a_sigma));
 }
+PROTO_KERNEL_END(f_gaussian_0, f_gaussian);
 
 int main(int argc, char** argv)
 {
 #ifdef PR_MPI
     MPI_Init(&argc, &argv);
 #endif
-
+    using Proto::pout;
     HDF5Handler h5;
     
     int domainSize = 64;
@@ -125,6 +137,8 @@ int main(int argc, char** argv)
     
     double L = 1.0;
     int bufferSize = 1;
+    int one = 1;
+    int zro = 0;
     Point refRatioV = Point::Ones(refRatio);
     for (int nn = 0; nn < 1; nn++)
     {
@@ -157,8 +171,8 @@ int main(int argc, char** argv)
 
                 AMRGrid grid(layouts, refRatios, 2);
                 AMRData<double> testData(grid, Point::Zeros());
-                testData[0].initialize(f_const, 1, 0);
-                testData[1].initialize(f_const, 1, 1);
+                testData[0].initialize(f_const, one, zro);
+                testData[1].initialize(f_const, one, one);
                 h5.writeAMRData({"data"}, 1.0, testData, "Grid_0");
 
                 LevelTagData tags(layout, tagBufferSize);
@@ -183,8 +197,8 @@ int main(int argc, char** argv)
                 }
 
                 AMRData<double> data(grid, Point::Zeros());
-                data[0].initialize(f_const, 1, 0);
-                data[1].initialize(f_const, 1, 1);
+                data[0].initialize(f_const, one, zro);
+                data[1].initialize(f_const, one, one);
 
                 h5.writeAMRData({"data"}, 1.0, data, "Grid_1");
                 break;
@@ -219,8 +233,8 @@ int main(int argc, char** argv)
 
                 AMRGrid grid(layouts, refRatios, 2);
                 AMRData<double> testData(grid, Point::Zeros());
-                testData[0].initialize(f_const, 1, 0);
-                testData[1].initialize(f_const, 1, 1);
+                testData[0].initialize(f_const, one, zro);
+                testData[1].initialize(f_const, one, one);
                 h5.writeAMRData({"data"}, 1.0, testData, "Grid_0");
 
                 LevelTagData tags(layout, tagBufferSize);
@@ -245,8 +259,8 @@ int main(int argc, char** argv)
                 }
 
                 AMRData<double> data(grid, Point::Zeros());
-                data[0].initialize(f_const, 1, 0);
-                data[1].initialize(f_const, 1, 1);
+                data[0].initialize(f_const, one, zro);
+                data[1].initialize(f_const, one, one);
 
                 h5.writeAMRData({"data"}, 1.0, data, "Grid_1");
                 break;
@@ -276,7 +290,8 @@ int main(int argc, char** argv)
                 refRatios.push_back(refRatioV);
                 AMRGrid grid(layout, refRatios, 2);
                 AMRData<double> data(grid, bufferSize);
-                data.initialize(dx, f_gaussian, origin, 0.25);
+                double sigma = 0.25;
+                data.initialize(dx, f_gaussian, origin, sigma);
                 h5.writeAMRData({"data"}, dx, data, "InputData");  
               
                 // Compute Tags 
@@ -288,8 +303,9 @@ int main(int argc, char** argv)
                 grid.regrid(tags, 0, fineBoxSizeVect);
                 // this is just so we can see the output grid
                 AMRData<double> gridData(grid, Point::Zeros());
-                gridData[0].initialize(f_const, dx, 0);
-                gridData[1].initialize(f_const, dx / refRatio, 1);
+                gridData[0].initialize(f_const, dx, zro);
+                double dxFine = dx / refRatio;
+                gridData[1].initialize(f_const, dxFine, one);
                 h5.writeAMRData({"gridData"}, dx, gridData, "Grid");
                 
                 Point originPatch = origin / fineBoxSizeVect * refRatioV; 
@@ -353,7 +369,7 @@ int main(int argc, char** argv)
                 for (int ii = 0; ii < 3; ii++)
                 {
 
-                    pout() << "Initializing level " << ii << std::endl;
+                    Proto::pout() << "Initializing level " << ii << std::endl;
                     data_before[ii].initialize(f_const, dx_vect[ii], ii);
                     data_before[ii].layout().print();
                     h5.writeLevel(dx_vect[ii], data_before[ii], "Grid_L%i_0", ii);
