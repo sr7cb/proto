@@ -429,7 +429,19 @@ namespace Proto
 
         /// For debugging purposes.
         int s_verbosity = 0;
-        
+
+      ///
+      Point ghostVect() const
+      {
+        return m_ghost;
+      }
+
+      ///
+      DisjointBoxLayout disjointBoxLayout() const
+      {
+        return m_layout;
+      }
+      
         private: 
 
         std::vector<shared_ptr<BoxData<T, C, MEM> > > m_data;
