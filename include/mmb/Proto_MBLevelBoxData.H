@@ -15,6 +15,8 @@ namespace Proto
     // Forward Declaration
     template<typename T, unsigned int C, MemType MEM, Centering CTR>
     class MBLevelBoxData;
+    template<typename Func, MemType MEM>
+    class MBMap;
 
     typedef MotionItem<MBBoxPartition, MBBoxPartition> MBMotionItem;
     
@@ -40,7 +42,11 @@ namespace Proto
             bool m_inBoundary;
     };
 
-
+   inline std::ostream& operator<<(std::ostream& a_os, const MBDataPoint& a_point)
+   {
+       a_os << "point: " << a_point.point << "| block: " << a_point.block << " | bdry: " << a_point.boundaryDir;
+   }
+ 
     /// Level Copier Operator
     template<typename T, unsigned int C, MemType SRC_MEM, MemType DST_MEM, Centering CTR>
     class MBLevelCopierOp
@@ -117,12 +123,12 @@ namespace Proto
 
         inline MBLevelBoxData(
                 MBDisjointBoxLayout&    a_layout,
-                Array<Point, DIM+1>     a_ghost,
+                Array<Point, DIM+1>&     a_ghost,
                 Point                   a_boundGhost = Point::Zeros());
         
         inline void define(
                 MBDisjointBoxLayout&    a_layout,
-                Array<Point, DIM+1>     a_ghost,
+                Array<Point, DIM+1>&    a_ghost,
                 Point                   a_boundGhost = Point::Zeros());
        
         /// Initialize
@@ -134,28 +140,14 @@ namespace Proto
          *  p:    The point of evaluation
          *  d:    A data point in this
          *  b:    The block in which foo is being evaluated
-         *  ...:  Any other POD arguments passed by value (Point, Array, Box, int...)
+         *  ...:  Other arguments. These may be MBLevelBoxData, MBMap, or any kind of POD
+         *        If MBMap is used as an input, the argument will be converted to an
+         *        MBLevelBoxData containing the coordinate variables with the same centering
+         *        as *this.
          */
         template<typename Func, typename... Srcs>
-        inline void initialize(Func& a_func, Srcs... a_srcs);
+        inline void initialize(Func& a_func, Srcs&... a_srcs);
         
-        /// Initialize With Map
-        /** Initialize the data in this using forall-style syntax and an input map.
-         *  Func should be a valid forall kernel with the following signature:
-         *
-         *  void foo(Point& p, Var<T,C,MEM>& d, Var<double, DIM, MEM>& x, unsigned int b, ...);
-         *
-         *  p:    The point of evaluation
-         *  d:    A data point in this
-         *  x:    Coordinate (x,y,z...) values at Point p
-         *  b:    The block in which foo is being evaluated
-         *  ...:  Any other POD arguments passed by value (Point, Array, Box, int...)
-         */
-        template<typename Func, typename... Srcs>
-        inline void initialize(
-                const MBLevelBoxData<double, DIM, MEM, CTR>& a_map,
-                Func& a_func, Srcs... a_srcs);
-       
         inline void setVal(T a_value);
         template<typename Func, typename... Srcs>
         inline void initConvolve(Func& a_func, Srcs... a_srcs);
@@ -197,9 +189,10 @@ namespace Proto
         inline Var<T, C, MEM> operator[](const MBDataPoint& a_point) const;
         inline std::vector<MBDataPoint> interpFootprint(
                 const Point& a_center,
+                const Point& a_ghost,
                 const std::vector<Point>& a_footprint,
                 const MBIndex& a_index);
-        inline void printBounds(const MBIndex& a_index);
+        inline void printBounds(const MBIndex& a_index, int a_prec = 4);
 #ifdef PR_OPS
 #endif
         inline unsigned int numBlocks() const { return m_layout->numBlocks(); }

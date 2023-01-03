@@ -20,7 +20,7 @@ namespace Proto
 #if DIM==3
 #define PROTO_MAP_END(name) \
     } \
-    struct struct_proto_map_##name { \
+    struct name##_t { \
     template<MemType MEM = MEMTYPE_DEFAULT> \
     inline ACCEL_DECORATION \
     void operator() (Point& a_pt, Var<double, DIM, MEM>& a_x, \
@@ -51,12 +51,12 @@ namespace Proto
         return x; \
     } \
     }; \
-static struct_proto_map_##name name;
+static name##_t name;
 
 #elif DIM==2
 #define PROTO_MAP_END(name) \
     } \
-    struct struct_proto_map_##name { \
+    struct name##_t { \
     template<MemType MEM = MEMTYPE_DEFAULT> \
     inline ACCEL_DECORATION \
     void operator() (Point& a_pt, Var<double, DIM, MEM>& a_x, \
@@ -86,7 +86,7 @@ static struct_proto_map_##name name;
         return x; \
     } \
     }; \
-static struct_proto_map_##name name;
+static name##_t name;
 #endif
 template<typename Func, MemType MEM = MEMTYPE_DEFAULT>
 class MBMap
@@ -114,11 +114,13 @@ class MBMap
             Point                a_boundGhost,
             unsigned int a_order = 4);
 
-    /// Map Access
+    /// Node Centered Map
     inline MBLevelBoxData<double, DIM, MEM, PR_NODE>& map();
+    inline const MBLevelBoxData<double, DIM, MEM, PR_NODE>& map() const;
     
     /// Jacobian Access
     inline MBLevelBoxData<double, 1, MEM, PR_CELL>& jacobian();
+    inline const MBLevelBoxData<double, 1, MEM, PR_CELL>& jacobian() const;
 
     /// Compute Mapped Point From Array
     inline Array<double, DIM> operator()(

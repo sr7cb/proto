@@ -570,7 +570,7 @@ namespace Operator {
     
     /// 4th Order Face Averaged Tensor Quotient 
     /**
-         Returns the 4th order accurate face averaged quotient rule <(1/QR)QL>
+         Returns the 4th order accurate face averaged quotient rule <(1/QR)*QL>
          where QL is a tensor,and QR is a scalar. 
          Distinguishes between 2nd and 4th order inputs.
         
@@ -588,7 +588,26 @@ namespace Operator {
             const BoxData<T,C,MEM,D,E>& a_ql2,
             const BoxData<T,1,MEM,1,1>& a_qr2,
             int a_dir);
-
+ /// 4th Order Face Averaged Tensor Product 
+    /**
+         Returns the 4th order accurate face averaged quotient rule <QR*QL>
+         where QL is a tensor,and QR is a scalar. 
+         Distinguishes between 2nd and 4th order inputs.
+        
+        \param a_ql4    4th  order face averaged tensor quantity QL
+        \param a_qr4    4th  order face averaged scalar quantity QR
+        \param a_ql2    2nd+ order face centered quantity QL
+        \param a_qr2    2nd+ order face centered quantity QR
+        \param a_dir    face normal
+    */
+    template<class T, unsigned int C, unsigned char D, unsigned char E, MemType MEM>
+    BoxData<T,C,MEM,D,E>
+    _faceTensorProduct(
+            const BoxData<T,C,MEM,D,E>& a_ql4,
+            const BoxData<T,1,MEM,1,1>& a_qr4,
+            const BoxData<T,C,MEM,D,E>& a_ql2,
+            const BoxData<T,1,MEM,1,1>& a_qr2,
+            int a_dir);
     /// 4th Order Cell Averaged Tensor Quotient 
     /**
          Returns the 4th order accurate face averaged quotient rule <(1/QR) QL>
@@ -664,7 +683,28 @@ namespace Operator {
             const BoxData<T,CL,MEM,DL,E>& a_ql2,
             const BoxData<T,CR,MEM,DR,E>& a_qr2,
             int a_dir);
+  
+    template<class T, unsigned int CL,unsigned char DL,
+           unsigned int CR, unsigned char DR, unsigned char E, MemType MEM>
+    BoxData<T,CL,MEM,DR,E>
+    _matrixProductAB2(
+            const BoxData<T,CL,MEM,DL,E>& a_ql,
+            const BoxData<T,CR,MEM,DR,E>& a_qr);
+
+    template<class T, unsigned int CL, unsigned char DL,
+         unsigned int CR, unsigned char DR, unsigned char E, MemType MEM>
+    BoxData<T,DL,MEM,DR,E>
+    _matrixProductATB2(
+            const BoxData<T,CL,MEM,DL,E>& a_ql,
+            const BoxData<T,CR,MEM,DR,E>& a_qr);
     
+    template<class T, unsigned int CL, unsigned char DL,
+         unsigned int CR, unsigned char DR, unsigned char E, MemType MEM>
+    BoxData<T,CL,MEM,CR,E>
+    _matrixProductABT2(
+            const BoxData<T,CL,MEM,DL,E>& a_ql,
+            const BoxData<T,CR,MEM,DR,E>& a_qr);
+  
     template<class T, unsigned int C, MemType MEM, unsigned char D, unsigned char E>
     BoxData<T,C,MEM,D,E>
     _product1D(
@@ -680,6 +720,30 @@ namespace Operator {
                   const BoxData<T,C,MEM>& phi,
                   int a_dir,
                   int a_order=4);
+  
+  template<class T,unsigned int CFLUX,unsigned int CPRIM, MemType MEM>
+  BoxData<T,CFLUX,MEM>
+  MHDSphericalFlux(                     
+                   const BoxData<T,CPRIM,MEM>& a_prim4,
+                   const BoxData<T,CPRIM,MEM>& a_prim2,
+                   const BoxData<T,DIM,MEM,DIM>& a_A4,
+                   const BoxData<T,DIM,MEM,DIM>& a_A2,
+                   const BoxData<T,1,MEM>& a_DrDetA4,                    
+                   const BoxData<T,1,MEM>& a_DrDetA2,
+                   const BoxData<T,DIM,MEM>& a_DrAdjA4,                    
+                   const BoxData<T,DIM,MEM>& a_DrAdjA2,
+                   const T& a_gamma,
+                   int a_dir);
+  template<class T,unsigned int C, MemType MEM>
+  BoxData<T,C,MEM,DIM>
+  _faceGradxPhi(                     
+               const BoxData<T,C,MEM>& a_phi4,
+               const BoxData<T,C,MEM>& a_phi2,
+               const BoxData<T,DIM,MEM,DIM>& a_NFace4,
+               const BoxData<T,DIM,MEM,DIM>& a_NFace2,
+               const BoxData<T,1,MEM>& a_JFace4,
+               const BoxData<T,1,MEM>& a_JFace2,
+               int a_dir);
 #include "implem/Proto_OperatorImplem.H"
 }
 #endif

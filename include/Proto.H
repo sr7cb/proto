@@ -11,6 +11,7 @@
 #include "base/Proto_accel.H"
 #endif
 #include "base/Proto_MemType.H"
+#include "base/Proto_Centering.H"
 #include "base/Proto_Memory.H"
 #include "base/Proto_Stack.H"
 #include "base/Proto_Point.H"
@@ -23,9 +24,9 @@
 #include "base/Proto_Stencil.H"
 #include "base/Proto_InterpStencil.H"
 #include "base/Proto_InterpStencilTP.H"
+#include "base/Proto_Operator.H"
 #include "base/Proto_BoxOp.H"
 #include "base/Proto_DisjointBoxLayout.H"
-#include "base/Proto_Centering.H"
 #include "base/Proto_LevelBoxData.H"
 #include "base/Proto_Reduction.H"
 #include "base/Proto_LevelOp.H"
@@ -44,6 +45,4 @@
 #include "ProtoOps.H"
 #endif
 
-//TODO: put this back in ops where it belongs
-#include "base/Proto_Operator.H"
 #endif

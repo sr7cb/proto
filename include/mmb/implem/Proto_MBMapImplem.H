@@ -17,10 +17,20 @@ void MBMap<Func, MEM>::define(
         Point                a_boundGhost,
         unsigned int         a_order)
 {
+    PR_TIME("MBMap::define");
+    for (int d = 0; d < DIM+1; d++)
+    {
+        PROTO_ASSERT(a_ghost[d].min() >= 0,
+                "MBMap::define | Error: Invalid ghost range");
+    }
+    PROTO_ASSERT(a_boundGhost.min() >= 0,
+            "MBMap::define | Error: Invalid boundary ghost range");
     m_func = &a_func;
     m_order = a_order;
-    m_X.define(a_layout, a_ghost, a_boundGhost);
-    m_J.define(a_layout, a_ghost, a_boundGhost);
+    auto ghost = a_ghost;
+    for (int ii = 0; ii < DIM+1; ii++) { ghost[ii] = ghost[ii] + a_boundGhost; }
+    m_X.define(a_layout, ghost, a_boundGhost);
+    m_J.define(a_layout, ghost, a_boundGhost);
     
     const auto& domain = a_layout.domain();
     const auto& graph = domain.graph();
@@ -81,8 +91,22 @@ MBMap<Func, MEM>::map()
 }
 
 template<typename Func, MemType MEM>
+const MBLevelBoxData<double, DIM, MEM, PR_NODE>&
+MBMap<Func, MEM>::map() const
+{
+    return m_X;
+}
+
+template<typename Func, MemType MEM>
 MBLevelBoxData<double, 1, MEM, PR_CELL>&
 MBMap<Func, MEM>::jacobian()
+{
+    return m_J;
+}
+
+template<typename Func, MemType MEM>
+const MBLevelBoxData<double, 1, MEM, PR_CELL>&
+MBMap<Func, MEM>::jacobian() const
 {
     return m_J;
 }
@@ -91,6 +115,7 @@ template<typename Func, MemType MEM>
 Array<double, DIM>
 MBMap<Func, MEM>::operator()(const Array<double, DIM> a_X, unsigned int a_block) const
 {
+    PR_TIME("MBMap::operator()(Array, Block)");
     return m_func->map(a_X, a_block);
 }
 
@@ -108,6 +133,7 @@ MBMap<Func, MEM>::operator()(
         const Point& a_dir,
         unsigned int a_block) const
 {
+    PR_TIME("MBMap::operator()(Cell, Dir, Block)");
     Array<double, DIM> X(a_cell);
     Array<double, DIM> dX(a_dir);
     dX += 1.0;
@@ -136,6 +162,7 @@ MBMap<Func, MEM>::operator()(
         unsigned int a_refBlock,
         Centering a_ctr) const
 {
+    PR_TIME("MBMap::operator()(Box, Block, RefBlock, Centering)");
     // Compute x in a_block
     auto domain = m_X.layout().domain();
     Point blockSize = domain.blockSize(a_block);

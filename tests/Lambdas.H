@@ -3,7 +3,7 @@
 #include <cmath>
 #include "Proto.H"
 
-#define XPOINT_SIZE 5
+#define XPOINT_SIZE 4
 #define XPOINT_RADIUS 2.0
 #define CUBED_SPHERE_R0 1.0
 #define CUBED_SPHERE_R1 2.0
@@ -115,6 +115,7 @@ MBProblemDomain buildCubeSphere(int a_domainSize)
         R_north = R_north*R_theta;
         R_south = R_south*R_theta;
     }
+    domain.graph().fixRotations();
     for (int bi = 0; bi < 6; bi++)
     {
         domain.defineDomain(bi, Point::Ones(a_domainSize));
@@ -138,6 +139,7 @@ MBProblemDomain buildXPoint(int a_domainSize)
     {
         domain.defineBoundary(ii, (ii+1) % XPOINT_SIZE, 0, Side::Hi, CCW);
     }
+    domain.graph().fixRotations();
     for (int bi = 0; bi < XPOINT_SIZE; bi++)
     {
         domain.defineDomain(bi, Point::Ones(a_domainSize));
@@ -185,6 +187,25 @@ PROTO_MAP_START(XPointMap)
     y = r*sin(theta);
     z = Z;
 PROTO_MAP_END(XPointMap)
+
+PROTO_MAP_START(XPointMapRigid)
+    double numBlocks = XPOINT_SIZE;
+    
+    double dtheta_mapped = 2*M_PI/numBlocks;
+    double dtheta_unmapped = M_PI/2.0;
+    double theta_ratio = dtheta_mapped/dtheta_unmapped;
+    
+    double u = (1-X);
+    double v = (1-Y);
+    double r = sqrt(u*u + v*v + 2*u*v*cos(dtheta_mapped));
+    //double theta = atan2(v,u)*theta_ratio + dtheta_mapped*block;
+    double alpha = dtheta_mapped;
+    double theta = atan2(v*sin(alpha), u + v*cos(alpha)) + alpha*block;
+
+    x = r*cos(theta);
+    y = r*sin(theta);
+    z = Z;
+PROTO_MAP_END(XPointMapRigid)
 
 template<MemType MEM>
 PROTO_KERNEL_START
@@ -388,8 +409,8 @@ PROTO_KERNEL_END(cosxFuncF,cosxFunc)
 
 template<unsigned int C, MemType MEM>
 PROTO_KERNEL_START
-void f_phiMF(const Point& a_pt, Var<double, C, MEM>& a_data, Var<double, DIM, MEM>& a_X,
-        Point a_k, Array<double, DIM> a_offset)
+void f_phiMF(const Point& a_pt, Var<double, C, MEM>& a_data, unsigned int a_block, 
+        Var<double, DIM, MEM>& a_X, Point a_k, Array<double, DIM> a_offset)
 {
     double phi = 1.0;
     for (int dir = 0; dir < DIM; dir++)

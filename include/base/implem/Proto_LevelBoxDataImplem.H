@@ -511,6 +511,18 @@ LevelBoxData<T, C, MEM, CTR>::operator*=(T a_scale)
 }
 
 template<typename T, unsigned int C, MemType MEM, Centering CTR>
+void
+LevelBoxData<T, C, MEM, CTR>::operator+=(T a_scale)
+{
+    PR_TIME("LevelBoxData::operator*=");
+    for (auto iter : m_layout)
+    {
+        auto& lhs_i = (*this)[iter];
+        lhs_i += a_scale;
+    }
+}
+
+template<typename T, unsigned int C, MemType MEM, Centering CTR>
 template <Proto::Operation OP>
 double
 LevelBoxData<T, C, MEM, CTR>::reduce(unsigned int a_comp) const
@@ -719,7 +731,6 @@ LevelCopier<T, C, SRC_MEM, DST_MEM, CTR>::buildMotionPlans(LevelCopierOp<T, C, S
     // patch. This is easy for the fromMotionPlan / localMotionPlan. In constructing
     // the toMotionPlan, though, must explicitly shift back and forth between local
     // coordinate systems defined by the source and destination.
-    int destProcID = procID();
 
     DisjointBoxLayout srclayout = a_op.m_src->layout();
     DisjointBoxLayout destlayout = a_op.m_dst->layout();

@@ -406,6 +406,12 @@ namespace Proto
             Checks if all elements of *this are equal.
         */
         inline bool isotropic() const;
+       
+        /// Query Codimension
+        /**
+            Returns the codimensionality of *this (e.g. the number of num-zero entries)
+        */
+        inline int codim() const;
         
         /// Parallel Unit Vectors
         /**
@@ -425,7 +431,9 @@ namespace Proto
         */
         inline std::array<Point, DIM> perpUnit() const;
 
-
+        /// Scaled Unit Vectors
+        inline std::vector<Point> split() const;
+        
         /// Convert Point to Direction
         /** A "direction" is defined as a Point with values limited to 1, 0, and -1.
          */
@@ -504,6 +512,36 @@ namespace Proto
 
     /// Unary Negation
     inline Point operator-(Point a_pt) { return a_pt*(-1); }
+
+    inline Point minPoint(Point& a_p1, Point& a_p2)
+    {
+        Point p;
+        for (int ii = 0; ii < DIM; ii++)
+        {
+            p[ii] = std::min(a_p1[ii], a_p2[ii]);
+        }
+        return p;
+    }
+
+    inline Point maxPoint(Point& a_p1, Point& a_p2)
+    {
+        Point p;
+        for (int ii = 0; ii < DIM; ii++)
+        {
+            p[ii] = std::max(a_p1[ii], a_p2[ii]);
+        }
+        return p;
+    }
+
+    inline Point absMaxPoint(Point& a_p1, Point& a_p2)
+    {
+        Point p;
+        for (int ii = 0; ii < DIM; ii++)
+        {
+            p[ii] = std::max(abs(a_p1[ii]), abs(a_p2[ii]));
+        }
+        return p;
+    }
 
     ///@}
 
