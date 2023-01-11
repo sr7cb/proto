@@ -9,7 +9,13 @@ using namespace Proto;
 TEST(MBPointInterpOp, XPointApply) {
     int domainSize = 64;
     int boxSize = 32;
-    
+    HDF5Handler h5;
+    if (DIM > 2) 
+    {
+       // domainSize = 16;
+       // boxSize = 8;
+    }
+
     constexpr int N = 2;
     Array<double, N> err(0);
     for (int nn = 0; nn < N; nn++)
@@ -76,17 +82,10 @@ TEST(MBPointInterpOp, XPointApply) {
                 boundErr.copyTo(errPatch);
                 double e = boundErr.absMax();
                 err[nn] = e > err[nn] ? e : err[nn];
-                /*
-                auto patchPoint = layout.point(iter);
-                if (patchPoint == (Point::Basis(0) + Point::Basis(1)))
-                {
-                    cornErr[nn] = e > cornErr[nn] ? e : cornErr[nn];
-                } else {
-                    edgeErr[nn] = e > edgeErr[nn] ? e : edgeErr[nn];
-                }
-                */
             }
         }
+        h5.writeMBLevel({"err"}, map, hostErr, "Err_%i", nn);
+        pout() << "Error: " << err[nn] << std::endl;
         domainSize *= 2;
         boxSize *= 2;
     }
@@ -97,7 +96,7 @@ TEST(MBPointInterpOp, XPointApply) {
         double rate = log(err[ii-1]/err[ii])/log(2.0);
         double rateErr = abs(rate - 4);
         EXPECT_LT(rateErr, rateTol);
-        //std::cout << "Convergence Rate: " << log(err[ii-1]/err[ii])/log(2.0) << std::endl;
+        pout() << "Convergence Rate: " << log(err[ii-1]/err[ii])/log(2.0) << std::endl;
     }
 }
 

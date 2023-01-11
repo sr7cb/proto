@@ -6,7 +6,7 @@ MBLevelBoxData<T, C, MEM, CTR>::MBLevelBoxData()
 
 template <typename T, unsigned int C, MemType MEM, Centering CTR>
 MBLevelBoxData<T, C, MEM, CTR>::MBLevelBoxData(
-    MBDisjointBoxLayout &a_layout,
+    const MBDisjointBoxLayout& a_layout,
     Point               a_ghost,
     Point               a_boundGhost)
 {
@@ -17,8 +17,8 @@ MBLevelBoxData<T, C, MEM, CTR>::MBLevelBoxData(
 
 template <typename T, unsigned int C, MemType MEM, Centering CTR>
 MBLevelBoxData<T, C, MEM, CTR>::MBLevelBoxData(
-    MBDisjointBoxLayout&    a_layout,
-    Array<Point, DIM+1>&    a_ghost,
+    const MBDisjointBoxLayout&    a_layout,
+    const Array<Point, DIM+1>&    a_ghost,
     Point                   a_boundGhost)
 {
     define(a_layout, a_ghost, a_boundGhost);
@@ -26,8 +26,8 @@ MBLevelBoxData<T, C, MEM, CTR>::MBLevelBoxData(
 
 template <typename T, unsigned int C, MemType MEM, Centering CTR>
 void MBLevelBoxData<T, C, MEM, CTR>::define(
-    MBDisjointBoxLayout&    a_layout,
-    Array<Point, DIM+1>&    a_ghost,
+    const MBDisjointBoxLayout&    a_layout,
+    const Array<Point, DIM+1>&    a_ghost,
     Point                   a_boundGhost)
 {
     // a_ghost convention:
@@ -484,6 +484,13 @@ MBLevelBoxData<T, C, MEM, CTR>::bound(MBIndex a_index, Point a_dir, unsigned int
         }
     }
     MayDay<void>::Error("MBLevelBoxData::bound | Error: Data corruption.");
+}
+
+template <typename T, unsigned int C, MemType MEM, Centering CTR>
+bool
+MBLevelBoxData<T, C, MEM, CTR>::compatible(const MBDisjointBoxLayout& a_layout) const
+{
+    return (m_layout->compatible(a_layout));
 }
 
 template <typename T, unsigned int C, MemType MEM, Centering CTR>
@@ -1058,33 +1065,6 @@ bool MBDataPoint::operator==(const MBDataPoint &a_rhs) const
     }
     return true;
 }
-/*
-bool MBDataPoint::operator<(const MBDataPoint &a_rhs) const
-{
-    if (index != a_rhs.index)
-    {
-        return index < a_rhs.index;
-    }
-    else if (m_inBoundary && (block != a_rhs.block))
-    {
-        return block < a_rhs.block;
-    }
-    else if (m_inBoundary && boundaryDir != a_rhs.boundaryDir)
-    {
-        return boundaryDir < a_rhs.boundaryDir;
-    }
-    else if (point != a_rhs.point)
-    {
-        return point < a_rhs.point;
-    }
-    else
-    {
-        PROTO_ASSERT((*this) == a_rhs,
-            "MBDataPoint::operator< | Error: objects should be equal but are not.");
-        return false;
-    }
-}
-*/
 
 template<typename T, unsigned int C, MemType MEM, Centering CTR>
 BoxData<T, C, MEM>& MBDataPoint::patch(MBLevelBoxData<T, C, MEM, CTR>& a_data) const

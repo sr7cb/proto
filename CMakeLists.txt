@@ -21,19 +21,13 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)  # if OFF, compilation will revert to older standard if C++11 unavailable
 set(CMAKE_CXX_EXTENSIONS OFF)  # if OFF, compilation flag uses c++11, not gnu++11
 
-# setup basics
-if(NOT DEFINED CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Choose build type, \
-options are: Debug Release RelWithDebInfo" FORCE)
-else()
-  message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
-endif()
 
 option(BUILD_SHARED_LIBS "Build using shared libraries" OFF)
 set(CMAKE_POSITION_INDEPENEDENT_CODE TRUE)
 option(AMR "Build AMR libraries" OFF)
 option(MMB "Build MMB libraries" OFF)
 option(OPS "Build Operator libraries" OFF)
+option(DEBUG "Building with DEBUG ON" ON)
 option(ENABLE_MPI "Build using MPI" ON)
 option(ENABLE_OPENMP "Build using OpenMP" OFF)
 option(ENABLE_CUDA "Build using CUDA" OFF)
@@ -47,12 +41,31 @@ option(MEMCHECK "turns on code in BoxData that checks that copying/aliasing is w
 option(MEMTRACK "print the amount of data allocated per protoMalloc" OFF)
 option(TIMERS "whether to turn on timers" ON)
 
+set(VERBOSE 0 CACHE STRING "Verbosity of output")
 set(DIM 3 CACHE STRING "Dimensionality of examples")
 set(STACK 4294967296 CACHE STRING "Stack size")
-message(STATUS "Dimensionality: ${DIM}\n   Stack size: ${STACK}")
+message(STATUS "Dimensionality: ${DIM}")
+message(STATUS "Stack size: ${STACK}")
+message(STATUS "Verbosity: ${VERBOSE}")
 
+add_compile_definitions(PR_VERBOSE=${VERBOSE})
 add_compile_definitions(DIM=${DIM})
 add_compile_definitions(PR_STACK_ALLOC=${STACK})
+if (DEBUG)
+    set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Choose build type, \
+options are: Debug Release RelWithDebInfo" FORCE)
+else()
+    set(VERBOSE 0 CACHE STRING "Verbosity of output")
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose build type, \
+options are: Debug Release RelWithDebInfo" FORCE)
+endif()
+
+if(NOT DEFINED CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose build type, \
+options are: Debug Release RelWithDebInfo" FORCE)
+else()
+  message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
+endif()
 
 if (AMR)
     message(STATUS "AMR libraries are enabled")

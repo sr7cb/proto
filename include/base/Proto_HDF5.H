@@ -1,25 +1,34 @@
 #pragma once
 #ifndef PROTO_HDF5_H
 #define PROTO_HDF5_H
-#include "Proto_LevelBoxData.H"
-#ifdef PR_AMR
-#include "../amr/Proto_AMRData.H"
-#include "../amr/Proto_LevelFluxRegister.H"
-#endif
-#ifdef PR_MMB
-#include "../mmb/Proto_MBLevelBoxData.H"
-#endif
+#include "Proto_BoxData.H"
 #include "hdf5.h"
 
 namespace Proto
 {
+    template<typename T, unsigned int C, MemType MEM, Centering CTR>
+    class LevelBoxData;
+    
+#ifdef PR_AMR
+    template<typename T, unsigned int C, MemType MEM, Centering CTR>
+    class AMRData;
+    template<typename T, unsigned int C, MemType MEM>
+    class LevelFluxRegister;
+#endif
+#ifdef PR_MMB
+    template<typename MAP, MemType MEM>
+    class MBMap;
+    template<typename T, unsigned int C, MemType MEM, Centering CTR>
+    class MBLevelBoxData;
+#endif
+
     class HDF5Handler
     {
         public:
 
         /// Default Constructor
         inline HDF5Handler();
-       
+      
         /// Read Level Box Data
         /**
             Read a LevelBoxData from an appropriately constructed HDF5 file. This function 
@@ -63,7 +72,7 @@ namespace Proto
         template<typename T, unsigned int C, typename... Args>
         inline void writePatch(
                         std::vector<std::string> a_varnames,
-                        array<double, DIM> a_dx,
+                        Array<double, DIM> a_dx,
                         const BoxData<T, C, HOST>& a_data,
                         std::string a_filename,
                         Args... a_params);
@@ -71,7 +80,7 @@ namespace Proto
         template<typename T, unsigned int C, typename... Args>
         inline void writePatch(
                         std::vector<std::string> a_varnames,
-                        array<double, DIM> a_dx,
+                        Array<double, DIM> a_dx,
                         const BoxData<T, C, DEVICE>& a_data,
                         std::string a_filename,
                         Args... a_params);
@@ -87,7 +96,7 @@ namespace Proto
         
         template<typename T, unsigned int C, MemType MEM, typename... Args>
         inline void writePatch(
-                        array<double, DIM> a_dx,
+                        Array<double, DIM> a_dx,
                         const BoxData<T, C, MEM>& a_data,
                         std::string a_filename,
                         Args... a_params);
@@ -135,7 +144,7 @@ namespace Proto
         template<typename T, unsigned int C, Centering CTR, typename... Args>
         inline void writeLevel(
                         std::vector<std::string> a_varnames,
-                        array<double, DIM> a_dx,
+                        Array<double, DIM> a_dx,
                         const LevelBoxData<T, C, HOST, CTR>& a_data,
                         std::string a_filename,
                         Args... a_params);
@@ -143,7 +152,7 @@ namespace Proto
         template<typename T, unsigned int C, Centering CTR, typename... Args>
         inline void writeLevel(
                         std::vector<std::string> a_varnames,
-                        array<double, DIM> a_dx,
+                        Array<double, DIM> a_dx,
                         const LevelBoxData<T, C, DEVICE, CTR>& a_data,
                         std::string a_filename,
                         Args... a_params);
@@ -166,7 +175,7 @@ namespace Proto
         */
         template<typename T, unsigned int C, MemType MEM, Centering CTR, typename... Args>
         inline void writeLevel(
-                        array<double, DIM> a_dx,
+                        Array<double, DIM> a_dx,
                         const LevelBoxData<T, C, MEM, CTR>& a_data,
                         std::string a_filename,
                         Args... a_params);
@@ -208,7 +217,7 @@ namespace Proto
         template<typename T, unsigned int C, MemType MEM, Centering CTR, typename... Args>
         inline void writeAMRData(
                         std::vector<std::string> a_varnames,
-                        array<double, DIM> a_dx,
+                        Array<double, DIM> a_dx,
                         const AMRData<T, C, MEM, CTR>& a_data,
                         std::string a_filename,
                         Args... a_params);
@@ -225,7 +234,7 @@ namespace Proto
         /// Write AMR Hierarchy 
         template<typename T, unsigned int C, MemType MEM, Centering CTR, typename... Args>
         inline void writeAMRData(
-                        array<double, DIM> a_dx,
+                        Array<double, DIM> a_dx,
                         const AMRData<T, C, MEM, CTR>& a_data,
                         std::string a_filename,
                         Args... a_params);
@@ -242,7 +251,7 @@ namespace Proto
         template<typename T, unsigned int C, MemType MEM, typename... Args>
         inline void writeFluxRegister(
                         std::vector<std::string> a_varnames,
-                        array<double, DIM> a_dx,
+                        Array<double, DIM> a_dx,
                         LevelFluxRegister<T, C, MEM>& a_register,
                         std::string a_filename,
                         Args... a_params);
@@ -250,7 +259,7 @@ namespace Proto
         /// Write Flux Register
         template<typename T, unsigned int C, MemType MEM, typename... Args>
         inline void writeFluxRegister(
-                        array<double, DIM> a_dx,
+                        Array<double, DIM> a_dx,
                         LevelFluxRegister<T, C, MEM>& a_register,
                         std::string a_filename,
                         Args... a_params);
@@ -263,6 +272,14 @@ namespace Proto
                         Args... a_params);
 #endif
 #ifdef PR_MMB
+        template<typename T, unsigned int C, MemType MEM, Centering CTR, typename MAP, typename... Args>
+        inline void writeMBLevel(
+                        std::vector<std::string> a_varNames,
+                        const MBMap<MAP, MEM>& a_map,
+                        const MBLevelBoxData<T, C, MEM, CTR>& a_data,
+                        std::string a_filename,
+                        Args... a_params);
+        
         template<typename T, unsigned int C, MemType MEM, Centering CTR, typename... Args>
         inline void writeMBLevel(
                         std::vector<std::string> a_varNames,
@@ -296,14 +313,14 @@ namespace Proto
         template<typename T, unsigned int C, MemType MEM, Centering CTR>
         inline void addLevel(hid_t* a_file,
             const LevelBoxData<T, C, MEM, CTR>& a_data,
-            array<double, DIM>& a_dx0,
+            Array<double, DIM>& a_dx0,
             Point a_refRatio,
             int a_level);
         
         template<typename T, unsigned int C, MemType MEM>
         inline void addPatch(hid_t* a_file,
             const BoxData<T, C, MEM>& a_data,
-            array<double, DIM>& a_dx0,
+            Array<double, DIM>& a_dx0,
             Point a_ghost);
         
     }; // end class HDF5Handler

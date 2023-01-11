@@ -387,7 +387,7 @@ namespace Proto
             \param a_dx     Isotropic grid spacing
             \param a_comp   A component to integrate over
         */
-        inline double integrate(std::array<double, DIM> a_dx, unsigned int a_comp = 0) const;
+        inline double integrate(Array<double, DIM> a_dx, unsigned int a_comp = 0) const;
         
         /// Integral of Absolute Value
         /**
@@ -405,7 +405,7 @@ namespace Proto
             \param a_dx     Isotropic grid spacing
             \param a_comp   A component to integrate over
         */
-        inline double integrateAbs(std::array<double, DIM> a_dx, unsigned int a_comp = 0) const;
+        inline double integrateAbs(Array<double, DIM> a_dx, unsigned int a_comp = 0) const;
       
         /// Query Layout Compatibility
         template<typename _T, unsigned int _C, MemType _MEM, Centering _CTR>
@@ -425,6 +425,10 @@ namespace Proto
         inline BoxData<T,C,MEM>& operator[](const DataIndex<BoxPartition>& a_index);
         /// Get Const Patch
         inline const BoxData<T,C,MEM>& operator[](const DataIndex<BoxPartition>& a_index) const;
+        /// Get Patch (Face / Edge Centering)
+        inline BoxData<T,C,MEM>& operator()(const DataIndex<BoxPartition>& a_index, unsigned int a_dir = 0);
+        /// Get Const Patch (Face / Edge Centering)
+        inline const BoxData<T,C,MEM>& operator()(const DataIndex<BoxPartition>& a_index, unsigned int a_dir = 0) const;
         
         /// Get Iterator
         inline DataIterator<BoxPartition> begin() const;
@@ -447,7 +451,7 @@ namespace Proto
       
         private: 
 
-        std::vector<shared_ptr<BoxData<T, C, MEM> > > m_data;
+        std::vector<std::vector<shared_ptr<BoxData<T, C, MEM> > >> m_data;
         Point                                   m_ghost;
         DisjointBoxLayout                       m_layout;
         bool                                    m_isDefined;
